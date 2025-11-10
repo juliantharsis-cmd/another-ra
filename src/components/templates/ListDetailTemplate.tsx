@@ -24,6 +24,7 @@ import { TableSkeleton } from '../tables/TableSkeleton'
 import { FixedSizeList } from 'react-window'
 import { useTableDataCache } from '@/hooks/useTableDataCache'
 import { enhanceWithCachedRelationships } from '@/lib/utils/enhanceWithCachedRelationships'
+import { fetchFieldMapping, getFieldMapping } from '@/lib/fieldIdMapping'
 
 interface ListDetailTemplateProps<T = any> {
   config: ListDetailTemplateConfig<T>
@@ -219,6 +220,17 @@ export default function ListDetailTemplate<T extends { id: string }>({
   // Configure table modal state
   const [isConfigureModalOpen, setIsConfigureModalOpen] = useState(false)
 
+  // Fetch field mapping on mount (for Field ID conversion in preferences)
+  useEffect(() => {
+    // Check if field mapping exists, if not fetch it (non-blocking)
+    const existingMapping = getFieldMapping(entityNamePlural)
+    if (!existingMapping) {
+      fetchFieldMapping(entityNamePlural).catch(err => {
+        console.warn(`Could not fetch field mapping for ${entityNamePlural} (preferences will use field names):`, err)
+      })
+    }
+  }, [entityNamePlural])
+
   // Load table configuration on mount and when entity changes (only if feature enabled)
   useEffect(() => {
     if (!isTableConfigurationEnabled) {
@@ -344,6 +356,83 @@ export default function ListDetailTemplate<T extends { id: string }>({
               sortable: false, // Fields from detail view are not sortable by default
               align: 'left',
               render: (value: any, item: any) => {
+                // Handle attachment fields - render as thumbnails
+                if (field.type === 'attachment' || field.type === 'readonly') {
+                  // Check if value is an attachment object or array of attachments
+                  const isAttachmentValue = (val: any): boolean => {
+                    if (!val) return false
+                    if (Array.isArray(val)) {
+                      return val.length > 0 && val.some((item: any) => 
+                        item && typeof item === 'object' && (item.url || item.thumbnails || item.filename)
+                      )
+                    }
+                    return typeof val === 'object' && (val.url || val.thumbnails || val.filename)
+                  }
+                  
+                  if (isAttachmentValue(value)) {
+                    const attachments = Array.isArray(value) ? value : (value ? [value] : [])
+                    const validAttachments = attachments.filter((att: any) => 
+                      att && (att.url || att.thumbnails?.large?.url || att.thumbnails?.small?.url)
+                    )
+                    
+                    if (validAttachments.length > 0) {
+                      return (
+                        <div className="flex items-center gap-2">
+                          {validAttachments.slice(0, 3).map((attachment: any, idx: number) => {
+                            const url = attachment.url || attachment.thumbnails?.large?.url || attachment.thumbnails?.small?.url
+                            const filename = attachment.filename || attachment.name || `attachment-${idx + 1}`
+                            const isImage = attachment.type?.startsWith('image/') || 
+                                           filename.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)
+                            
+                            if (!url) return null
+                            
+                            return (
+                              <div key={idx} className="flex-shrink-0">
+                                {isImage ? (
+                                  <img
+                                    src={url}
+                                    alt={filename}
+                                    className="w-10 h-10 object-cover rounded border border-neutral-200"
+                                    onError={(e) => {
+                                      // Fallback to document icon if image fails to load
+                                      const target = e.target as HTMLImageElement
+                                      target.style.display = 'none'
+                                      const parent = target.parentElement
+                                      if (parent) {
+                                        parent.innerHTML = `
+                                          <div class="w-10 h-10 flex items-center justify-center bg-neutral-100 rounded border border-neutral-200">
+                                            <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                          </div>
+                                        `
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 flex items-center justify-center bg-neutral-100 rounded border border-neutral-200">
+                                    <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                          {validAttachments.length > 3 && (
+                            <span className="text-xs text-neutral-500">
+                              +{validAttachments.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    }
+                  }
+                  
+                  // No attachments
+                  return <span className="text-sm text-neutral-400">—</span>
+                }
+                
                 // For linked records, try to get resolved names from item
                 if (field.type === 'choiceList' && linkedRecordFieldMap[field.key]) {
                   const resolvedKey = linkedRecordFieldMap[field.key]
@@ -1431,6 +1520,79 @@ export default function ListDetailTemplate<T extends { id: string }>({
     const value = (item as any)[column.key]
     if (value === null || value === undefined || value === '') {
       return <span className="text-neutral-400">—</span>
+    }
+    
+    // Handle attachment objects/arrays - detect by structure
+    const isAttachmentValue = (val: any): boolean => {
+      if (!val) return false
+      if (Array.isArray(val)) {
+        return val.length > 0 && val.some((item: any) => 
+          item && typeof item === 'object' && (item.url || item.thumbnails || item.filename)
+        )
+      }
+      return typeof val === 'object' && (val.url || val.thumbnails || val.filename)
+    }
+    
+    if (isAttachmentValue(value)) {
+      const attachments = Array.isArray(value) ? value : (value ? [value] : [])
+      const validAttachments = attachments.filter((att: any) => 
+        att && (att.url || att.thumbnails?.large?.url || att.thumbnails?.small?.url)
+      )
+      
+      if (validAttachments.length > 0) {
+        return (
+          <div className="flex items-center gap-2">
+            {validAttachments.slice(0, 3).map((attachment: any, idx: number) => {
+              const url = attachment.url || attachment.thumbnails?.large?.url || attachment.thumbnails?.small?.url
+              const filename = attachment.filename || attachment.name || `attachment-${idx + 1}`
+              const isImage = attachment.type?.startsWith('image/') || 
+                             filename.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)
+              
+              if (!url) return null
+              
+              return (
+                <div key={idx} className="flex-shrink-0">
+                  {isImage ? (
+                    <img
+                      src={url}
+                      alt={filename}
+                      className="w-10 h-10 object-cover rounded border border-neutral-200"
+                      onError={(e) => {
+                        // Fallback to document icon if image fails to load
+                        const target = e.target as HTMLImageElement
+                        target.style.display = 'none'
+                        const parent = target.parentElement
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-10 h-10 flex items-center justify-center bg-neutral-100 rounded border border-neutral-200">
+                              <svg class="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            </div>
+                          `
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="w-10 h-10 flex items-center justify-center bg-neutral-100 rounded border border-neutral-200">
+                      <svg className="w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {validAttachments.length > 3 && (
+              <span className="text-xs text-neutral-500">
+                +{validAttachments.length - 3}
+              </span>
+            )}
+          </div>
+        )
+      }
+      
+      return <span className="text-sm text-neutral-400">—</span>
     }
     
     // Default rendering matches CompanyTable styling

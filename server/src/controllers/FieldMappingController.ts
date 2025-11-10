@@ -1,7 +1,15 @@
 import { Request, Response } from 'express'
 import { FieldMappingService } from '../services/FieldMappingService'
 
-const fieldMappingService = new FieldMappingService()
+// Lazy initialization to ensure environment variables are loaded
+let fieldMappingServiceInstance: FieldMappingService | null = null
+
+function getFieldMappingService(): FieldMappingService {
+  if (!fieldMappingServiceInstance) {
+    fieldMappingServiceInstance = new FieldMappingService()
+  }
+  return fieldMappingServiceInstance
+}
 
 export class FieldMappingController {
   /**
@@ -17,7 +25,7 @@ export class FieldMappingController {
         return
       }
 
-      const mapping = await fieldMappingService.getFieldMapping(tableId)
+      const mapping = await getFieldMappingService().getFieldMapping(tableId)
 
       if (!mapping) {
         res.status(404).json({ error: 'Field mapping not found' })
@@ -53,7 +61,7 @@ export class FieldMappingController {
         return
       }
 
-      const mapping = await fieldMappingService.createOrUpdateFieldMapping(
+      const mapping = await getFieldMappingService().createOrUpdateFieldMapping(
         tableId,
         {
           baseId,

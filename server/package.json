@@ -11,7 +11,8 @@
     "test:preferences": "tsx src/scripts/testPreferences.ts",
     "create:preferences-table": "tsx src/scripts/createPreferencesTable.ts",
     "update:user-preferences-schema": "tsx src/scripts/updateUserPreferencesTableSchema.ts",
-    "cleanup:user-preferences-table": "tsx src/scripts/cleanupUserPreferencesTable.ts"
+    "cleanup:user-preferences-table": "tsx src/scripts/cleanupUserPreferencesTable.ts",
+    "fetch:table-ids": "tsx ../scripts/fetch-table-ids.ts"
   },
   "dependencies": {
     "express": "^4.18.2",

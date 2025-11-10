@@ -5,7 +5,18 @@
  * - Column visibility
  * - Column order
  * - Default sort
+ * 
+ * NOTE: This module now uses Airtable Field IDs internally for stability.
+ * The public API still accepts/returns field keys for backward compatibility.
  */
+
+import {
+  getFieldMapping,
+  fetchFieldMapping,
+  convertPreferencesToFieldIds,
+  convertPreferencesFromFieldIds,
+  isComputedField,
+} from './fieldIdMapping'
 
 export type ListMode = 'compact' | 'comfortable' | 'spacious'
 
@@ -20,18 +31,44 @@ export interface TablePreferences {
   }
   listMode?: ListMode
   pageSize?: number // Per-table page size override (overrides user default)
+  // Internal: Track if preferences are using Field IDs
+  _usingFieldIds?: boolean
 }
 
 const STORAGE_PREFIX = 'table_prefs_'
+const STORAGE_PREFIX_LEGACY = 'table_prefs_legacy_' // For migration tracking
 
 /**
  * Get preferences for a specific table
+ * Returns preferences with field keys (converted from Field IDs if needed)
  */
 export function getTablePreferences(tableId: string): TablePreferences | null {
   try {
     const stored = localStorage.getItem(`${STORAGE_PREFIX}${tableId}`)
     if (!stored) return null
-    return JSON.parse(stored) as TablePreferences
+    
+    const prefs = JSON.parse(stored) as TablePreferences
+    
+    // If preferences are stored with Field IDs, convert them back to field keys
+    if (prefs._usingFieldIds) {
+      const converted = convertPreferencesFromFieldIds(tableId, {
+        columnVisibility: prefs.columnVisibility,
+        columnOrder: prefs.columnOrder,
+        defaultSort: prefs.defaultSort,
+      })
+      
+      return {
+        ...prefs,
+        columnVisibility: converted.columnVisibility || prefs.columnVisibility,
+        columnOrder: converted.columnOrder || prefs.columnOrder,
+        defaultSort: converted.defaultSort || prefs.defaultSort,
+        _usingFieldIds: true, // Keep flag for saving
+      }
+    }
+    
+    // Legacy preferences (using field names) - return as-is for now
+    // Migration will happen on next save
+    return prefs
   } catch (error) {
     console.error('Error loading table preferences:', error)
     return null
@@ -40,10 +77,45 @@ export function getTablePreferences(tableId: string): TablePreferences | null {
 
 /**
  * Save preferences for a specific table
+ * Converts field keys to Field IDs before saving (if mapping is available)
+ * This is synchronous - mapping must be fetched beforehand if needed
  */
 export function saveTablePreferences(tableId: string, preferences: TablePreferences): void {
   try {
-    localStorage.setItem(`${STORAGE_PREFIX}${tableId}`, JSON.stringify(preferences))
+    // Try to get field mapping (must be already loaded)
+    const mapping = getFieldMapping(tableId)
+    
+    if (mapping) {
+      // Convert field keys to Field IDs before saving
+      const converted = convertPreferencesToFieldIds(tableId, {
+        columnVisibility: preferences.columnVisibility,
+        columnOrder: preferences.columnOrder,
+        defaultSort: preferences.defaultSort,
+      })
+      
+      const prefsToSave: TablePreferences = {
+        ...preferences,
+        columnVisibility: converted.columnVisibility || preferences.columnVisibility,
+        columnOrder: converted.columnOrder || preferences.columnOrder,
+        defaultSort: converted.defaultSort || preferences.defaultSort,
+        _usingFieldIds: true, // Mark as using Field IDs
+      }
+      
+      localStorage.setItem(`${STORAGE_PREFIX}${tableId}`, JSON.stringify(prefsToSave))
+      
+      // Also save a backup of legacy format for migration reference (first time only)
+      if (!localStorage.getItem(`${STORAGE_PREFIX_LEGACY}${tableId}`)) {
+        localStorage.setItem(`${STORAGE_PREFIX_LEGACY}${tableId}`, JSON.stringify(preferences))
+      }
+    } else {
+      // No mapping available - save as-is (will be migrated when mapping is available)
+      localStorage.setItem(`${STORAGE_PREFIX}${tableId}`, JSON.stringify(preferences))
+      
+      // Try to fetch mapping in background for next time (non-blocking)
+      fetchFieldMapping(tableId).catch(() => {
+        // Silently fail - will try again on next save
+      })
+    }
   } catch (error) {
     console.error('Error saving table preferences:', error)
   }

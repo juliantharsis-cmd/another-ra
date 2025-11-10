@@ -43,6 +43,13 @@ export class FieldMappingService {
   constructor() {
     this.apiKey = process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN || ''
     this.baseId = process.env.AIRTABLE_SYSTEM_CONFIG_BASE_ID || ''
+    
+    if (!this.apiKey) {
+      console.warn('⚠️ [FieldMappingService] AIRTABLE_PERSONAL_ACCESS_TOKEN not set')
+    }
+    if (!this.baseId) {
+      console.warn('⚠️ [FieldMappingService] AIRTABLE_SYSTEM_CONFIG_BASE_ID not set')
+    }
   }
 
   /**
@@ -50,22 +57,31 @@ export class FieldMappingService {
    * If not found, attempts to fetch from Airtable Metadata API
    */
   async getFieldMapping(tableId: string): Promise<TableFieldMapping | null> {
-    // First, try to get from cache/storage (if we implement it)
-    // For now, we'll fetch from Airtable Metadata API
+    console.log(`🔍 [FieldMappingService] Getting field mapping for table: ${tableId}`)
     
     // Get table info from our table mapping
     const tableInfo = this.getTableInfo(tableId)
     if (!tableInfo) {
-      console.warn(`No Airtable mapping found for table: ${tableId}`)
+      console.warn(`⚠️ [FieldMappingService] No Airtable mapping found for table: ${tableId}`)
+      console.warn(`   Available environment variables:`)
+      console.warn(`   - AIRTABLE_USER_TABLE_TABLE_ID: ${process.env.AIRTABLE_USER_TABLE_TABLE_ID || 'NOT SET'}`)
+      console.warn(`   - AIRTABLE_USER_TABLE_TABLE_NAME: ${process.env.AIRTABLE_USER_TABLE_TABLE_NAME || 'NOT SET'}`)
+      console.warn(`   - AIRTABLE_COMPANY_TABLE_ID: ${process.env.AIRTABLE_COMPANY_TABLE_ID || 'NOT SET'}`)
       return null
     }
+    
+    console.log(`✅ [FieldMappingService] Found table info: ${tableInfo.airtableTableName} (${tableInfo.airtableTableId})`)
 
     try {
       // Fetch schema from Airtable Metadata API
+      console.log(`📥 [FieldMappingService] Fetching schema from Airtable Metadata API...`)
       const airtableSchema = await this.fetchAirtableSchema(tableInfo.airtableTableId)
       if (!airtableSchema) {
+        console.warn(`⚠️ [FieldMappingService] Failed to fetch schema from Airtable`)
         return null
       }
+      
+      console.log(`✅ [FieldMappingService] Fetched ${airtableSchema.fields.length} fields from Airtable`)
 
       // Create field mappings
       const fields: FieldIdMapping[] = airtableSchema.fields.map((field: any) => {
@@ -90,7 +106,7 @@ export class FieldMappingService {
         fieldIdToKey[field.fieldId] = field.fieldKey
       })
 
-      return {
+      const mapping = {
         tableId,
         tableName: airtableSchema.tableName,
         baseId: this.baseId,
@@ -100,8 +116,15 @@ export class FieldMappingService {
         fields,
         lastUpdated: new Date().toISOString(),
       }
+      
+      console.log(`✅ [FieldMappingService] Created mapping with ${fields.length} fields`)
+      console.log(`   Example mappings: Email -> ${fieldKeyToId['Email'] || 'NOT FOUND'}`)
+      
+      return mapping
     } catch (error: any) {
-      console.error(`Error fetching field mapping for ${tableId}:`, error)
+      console.error(`❌ [FieldMappingService] Error fetching field mapping for ${tableId}:`, error)
+      console.error(`   Error message: ${error.message}`)
+      console.error(`   Stack: ${error.stack}`)
       return null
     }
   }

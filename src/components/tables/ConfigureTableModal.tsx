@@ -13,6 +13,7 @@ import {
 import { trackEvent } from '@/lib/telemetry'
 import { tableConfigurationApi, TableSchema, TableField } from '@/lib/api/tableConfiguration'
 import { isFeatureEnabled } from '@/lib/featureFlags'
+import { fetchFieldMapping, getFieldMapping } from '@/lib/fieldIdMapping'
 
 export interface TableColumn {
   key: string
@@ -83,6 +84,12 @@ export default function ConfigureTableModal({
     try {
       setIsLoadingSchema(true)
       const config = await tableConfigurationApi.getConfiguration(tableId)
+      if (!config) {
+        // Configuration doesn't exist - this is OK, field renaming feature is optional
+        setHasTableConfiguration(false)
+        setIsLoadingSchema(false)
+        return
+      }
       setTableSchema(config)
       setHasTableConfiguration(true)
       
@@ -145,6 +152,20 @@ export default function ConfigureTableModal({
       setIsLoadingSchema(false)
     }
   }
+
+  // Fetch field mapping on mount (for Field ID conversion)
+  useEffect(() => {
+    if (isOpen) {
+      // Check if field mapping exists, if not fetch it
+      const existingMapping = getFieldMapping(tableId)
+      if (!existingMapping) {
+        // Fetch in background (non-blocking)
+        fetchFieldMapping(tableId).catch(err => {
+          console.warn('Could not fetch field mapping (preferences will use field names):', err)
+        })
+      }
+    }
+  }, [isOpen, tableId])
 
   // Load preferences on mount
   useEffect(() => {

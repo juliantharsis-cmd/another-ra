@@ -118,8 +118,9 @@ class TableConfigurationApiClient {
 
   /**
    * Get table configuration
+   * Returns null if configuration doesn't exist (404) - this is expected and not an error
    */
-  async getConfiguration(tableName: string): Promise<TableSchema> {
+  async getConfiguration(tableName: string): Promise<TableSchema | null> {
     const response = await fetch(`${this.baseUrl}/${encodeURIComponent(tableName)}`, {
       method: 'GET',
       headers: {
@@ -127,10 +128,12 @@ class TableConfigurationApiClient {
       },
     })
 
+    // 404 is expected if configuration doesn't exist - return null instead of throwing
+    if (response.status === 404) {
+      return null
+    }
+
     if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error(`Configuration for table "${tableName}" not found`)
-      }
       throw new Error(`Failed to fetch table configuration: ${response.statusText}`)
     }
 
