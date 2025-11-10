@@ -41,18 +41,39 @@ const PORT = process.env.PORT || 3001
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true)
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin')
+      return callback(null, true)
+    }
+    
+    console.log(`🔍 CORS: Checking origin: ${origin}`)
     
     // Allow localhost for local development
     if (origin === 'http://localhost:3000' || origin === 'http://127.0.0.1:3000') {
+      console.log('✅ CORS: Allowing localhost origin')
       return callback(null, true)
     }
     
-    // Allow GitHub Codespaces preview URLs
-    if (/^https:\/\/.*\.preview\.app\.github\.dev$/.test(origin)) {
+    // Allow GitHub Codespaces preview URLs (multiple formats)
+    // Format 1: https://xxx-3000.preview.app.github.dev
+    // Format 2: https://xxx.preview.app.github.dev
+    // Format 3: https://*.github.dev (any GitHub dev domain)
+    if (
+      /^https:\/\/.*\.preview\.app\.github\.dev$/.test(origin) ||
+      /^https:\/\/.*\.github\.dev$/.test(origin) ||
+      /^https:\/\/.*\.app\.github\.dev$/.test(origin)
+    ) {
+      console.log('✅ CORS: Allowing GitHub Codespaces origin')
       return callback(null, true)
     }
     
+    // Log rejected origins for debugging
+    console.warn(`❌ CORS: Rejected origin: ${origin}`)
+    console.warn(`   This origin doesn't match any allowed patterns.`)
+    console.warn(`   Allowed patterns:`)
+    console.warn(`   - http://localhost:3000`)
+    console.warn(`   - https://*.preview.app.github.dev`)
+    console.warn(`   - https://*.github.dev`)
     callback(new Error('Not allowed by CORS'))
   },
   credentials: true,
@@ -70,6 +91,23 @@ app.use((req, res, next) => {
     console.log(`   Body preview:`, req.body ? JSON.stringify(req.body).substring(0, 200) : 'no body')
   }
   next()
+})
+
+// Root endpoint - redirect to health check
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    message: 'Another RA API Server',
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      health: '/health',
+      status: '/api/status',
+      companies: '/api/companies',
+      users: '/api/users',
+    },
+    note: 'This is the backend API. Access the frontend on port 3000.',
+  })
 })
 
 // Health check endpoint

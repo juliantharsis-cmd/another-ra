@@ -18,9 +18,26 @@ echo "📝 Setting up environment files..."
 # Frontend .env.local (if needed)
 if [ ! -f .env.local ]; then
   echo "Creating .env.local template..."
-  cat > .env.local << EOF
-NEXT_PUBLIC_API_URL=http://localhost:3001
+  
+  # Detect if we're in Codespaces
+  if [ -n "$CODESPACE_NAME" ]; then
+    # We're in Codespaces - use the Codespaces backend URL
+    # The backend will be on port 3001, accessible via preview URL
+    # Format: https://CODESPACE_NAME-3001.preview.app.github.dev
+    CODESPACE_BACKEND_URL="https://${CODESPACE_NAME}-3001.preview.app.github.dev"
+    echo "🔍 Detected Codespaces environment: $CODESPACE_NAME"
+    echo "   Backend URL: $CODESPACE_BACKEND_URL"
+    cat > .env.local << EOF
+# Codespaces Configuration
+NEXT_PUBLIC_API_URL=${CODESPACE_BACKEND_URL}/api
 EOF
+  else
+    # Local development
+    cat > .env.local << EOF
+# Local Development Configuration
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+EOF
+  fi
 fi
 
 # Backend .env

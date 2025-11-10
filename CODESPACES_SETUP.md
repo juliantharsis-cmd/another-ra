@@ -60,7 +60,23 @@ npm install
 cd ..
 ```
 
-## Step 4: Start the Servers
+## Step 4: Verify API URL Configuration
+
+Before starting servers, verify the frontend is configured correctly:
+
+```bash
+# Check if .env.local exists and has the correct API URL
+cat .env.local
+
+# If it's missing or wrong, update it:
+bash .devcontainer/update-api-url.sh
+```
+
+The API URL should be:
+- **Codespaces:** `https://your-codespace-name-3001.preview.app.github.dev/api`
+- **NOT:** `http://localhost:3001/api` (this won't work from Codespaces frontend)
+
+## Step 5: Start the Servers
 
 ### Option A: Manual Start (Like Locally)
 
@@ -72,8 +88,11 @@ npm run dev
 
 **Terminal 2 - Frontend:**
 ```bash
+# Make sure you're in the root directory (not server/)
 npm run dev
 ```
+
+**Important:** The frontend must be restarted after changing `.env.local`!
 
 ### Option B: Use Start Script
 
@@ -83,7 +102,7 @@ bash .devcontainer/start.sh
 
 This starts both servers in the background.
 
-## Step 5: Access Your App
+## Step 6: Access Your App
 
 ### Port Forwarding (Automatic)
 
@@ -103,7 +122,7 @@ Codespaces automatically forwards ports. You'll see notifications like:
 - **Frontend:** `https://your-codespace-name-3000.preview.app.github.dev`
 - **Backend API:** `https://your-codespace-name-3001.preview.app.github.dev`
 
-## Step 6: Verify Everything Works
+## Step 7: Verify Everything Works
 
 1. **Check Backend:**
    ```bash
@@ -125,9 +144,16 @@ Codespaces automatically forwards ports. You'll see notifications like:
 
 ### Environment Variables Not Loading
 
+**Backend:**
 1. Check `server/.env` exists
 2. Restart the backend server
 3. Verify variables are set correctly
+
+**Frontend:**
+1. Check `.env.local` exists in root directory
+2. Verify `NEXT_PUBLIC_API_URL` points to Codespaces backend (not localhost)
+3. **Restart the frontend server** (environment variables are loaded at startup)
+4. Run: `bash .devcontainer/update-api-url.sh` to fix the URL
 
 ### Dependencies Not Installed
 

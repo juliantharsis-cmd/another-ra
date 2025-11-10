@@ -5,11 +5,20 @@
 ### 1. Create Codespace
 - Go to repo → Click **"Code"** → **"Codespaces"** → **"Create codespace"**
 
-### 2. Add Environment Variables
+### 2. Configure Environment Variables
+
+**Backend (.env):**
 ```bash
 cd server
 cp env.example .env
 # Edit .env with your Airtable credentials
+```
+
+**Frontend (.env.local) - Auto-configured!**
+The setup script automatically configures the API URL for Codespaces.
+If needed, update it manually:
+```bash
+bash .devcontainer/update-api-url.sh
 ```
 
 ### 3. Install Dependencies (auto-runs, but if needed):
@@ -22,12 +31,17 @@ cd server && npm install && cd ..
 
 ### Start Both Servers
 
+**Important:** Make sure `.env.local` is configured first:
+```bash
+cat .env.local  # Should show Codespaces backend URL
+```
+
 **Option 1: Two Terminals (Recommended)**
 ```bash
 # Terminal 1 - Backend
 cd server && npm run dev
 
-# Terminal 2 - Frontend  
+# Terminal 2 - Frontend (in root directory)
 npm run dev
 ```
 
