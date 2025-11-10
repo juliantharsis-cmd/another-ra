@@ -39,7 +39,22 @@ const PORT = process.env.PORT || 3001
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true)
+    
+    // Allow localhost for local development
+    if (origin === 'http://localhost:3000' || origin === 'http://127.0.0.1:3000') {
+      return callback(null, true)
+    }
+    
+    // Allow GitHub Codespaces preview URLs
+    if (/^https:\/\/.*\.preview\.app\.github\.dev$/.test(origin)) {
+      return callback(null, true)
+    }
+    
+    callback(new Error('Not allowed by CORS'))
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Id', 'Accept-Language', 'X-Timezone'],
