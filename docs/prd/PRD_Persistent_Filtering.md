@@ -3,8 +3,9 @@
 ## Document Information
 
 **Document Title:** Persistent Filtering System  
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** January 2025  
+**Last Updated:** January 2025  
 **Author:** Product Team  
 **Status:** Approved  
 **Domain:** ui, user-experience, data-management  
@@ -26,6 +27,8 @@ Implement a persistent filtering system that:
 - Restores filters automatically when users return to the table
 - Works per-user, per-table, per-browser session
 - Provides security safeguards to prevent XSS attacks
+- Controlled by feature flag for gradual rollout and easy disable
+- Prevents double API calls when toggling feature flag or loading saved filters
 
 ### 1.3. Business Value
 
@@ -87,32 +90,51 @@ Implement a persistent filtering system that:
 
 **US4:** As a developer, I want filter persistence to be secure so that user data is protected from XSS attacks.
 
+**US5:** As a developer, I want persistent filtering to be controlled by a feature flag so that I can enable/disable it without code changes.
+
+**US6:** As a user, I want filters to load instantly without causing multiple API calls so that the experience is smooth and performant.
+
 ---
 
 ## 4. Functional Requirements
 
-### 4.1. Persistent Filtering Toggle
+### 4.1. Feature Flag Control
 
-**FR1: Toggle Button**
-- **Requirement:** Toggle button in filter panel header
+**FR1: Feature Flag**
+- **Requirement:** Persistent filtering controlled by feature flag
+- **Acceptance Criteria:**
+  - Feature flag: `persistentFiltering` in `src/lib/featureFlags.ts`
+  - Can be enabled/disabled via environment variable: `NEXT_PUBLIC_FEATURE_PERSISTENT_FILTERING`
+  - Can be toggled via Settings Modal
+  - When disabled: Feature completely hidden, no persistence functionality
+  - When enabled: Full persistent filtering functionality available
+  - Toggle works without breaking or causing double API calls
+
+### 4.2. Persistent Filtering Toggle
+
+**FR2: Toggle Button**
+- **Requirement:** Toggle button in filter panel header (only if feature flag enabled)
 - **Acceptance Criteria:**
   - Button labeled "Persistent"
   - Shows checkmark icon when enabled (green)
   - Shows X icon when disabled (gray)
   - Toggle state persists per table
   - Default state: Enabled (persistent)
+  - Only visible when feature flag is enabled
 
-**FR2: Toggle Behavior**
+**FR3: Toggle Behavior**
 - **Requirement:** Toggle controls whether filters are saved
 - **Acceptance Criteria:**
   - When enabled: Filters saved to localStorage
   - When disabled: Filters not saved, cleared on page navigation
   - Toggle state saved per table independently
   - Changing toggle immediately affects save behavior
+  - Enabling persistence saves current filters immediately
+  - Disabling persistence clears saved filters but keeps current filters visible
 
-### 4.2. Filter Persistence
+### 4.3. Filter Persistence
 
-**FR3: Save Filters**
+**FR4: Save Filters**
 - **Requirement:** Save active filters when persistence is enabled
 - **Acceptance Criteria:**
   - Filters saved to localStorage with key: `table_prefs_{tableName}`
@@ -122,24 +144,38 @@ Implement a persistent filtering system that:
   - Saves debounced (500ms) to avoid excessive writes
   - Saves automatically when filters change
 
-**FR4: Load Filters**
+**FR5: Load Filters**
 - **Requirement:** Restore filters when returning to table
 - **Acceptance Criteria:**
   - Filters loaded from localStorage on component mount
-  - Only loads if persistent filtering is enabled
-  - Filters applied immediately on load
+  - Only loads if persistent filtering is enabled AND feature flag is enabled
+  - Filters initialized synchronously to prevent double API calls
+  - `debouncedFilters` initialized with saved filters during component initialization
+  - Filters applied immediately on load without causing multiple API calls
   - If persistence disabled, filters cleared on mount
+  - Feature flag toggle from disabled to enabled loads saved filters smoothly
 
-**FR5: Clear Filters**
+**FR6: Clear Filters**
 - **Requirement:** Clear saved filters when appropriate
 - **Acceptance Criteria:**
   - "Clear all filters" button clears both active and saved filters
   - Disabling persistence clears saved filters
   - Filters cleared when user explicitly clears them
 
-### 4.3. Security Requirements
+### 4.4. Performance Requirements
 
-**FR6: Input Sanitization**
+**FR7: Prevent Double API Calls**
+- **Requirement:** Avoid multiple API calls when loading saved filters
+- **Acceptance Criteria:**
+  - `debouncedFilters` initialized with saved filters during component initialization
+  - No initial API call with empty filters followed by call with saved filters
+  - Feature flag toggle from disabled to enabled doesn't cause double API calls
+  - Saved filters loaded synchronously when feature flag is enabled
+  - Cache key computed correctly from the start with saved filters
+
+### 4.5. Security Requirements
+
+**FR8: Input Sanitization**
 - **Requirement:** Sanitize filter values before saving
 - **Acceptance Criteria:**
   - Remove script tags from string values
@@ -149,7 +185,7 @@ Implement a persistent filtering system that:
   - Filter out null/undefined values from arrays
   - Sanitize loaded preferences on read
 
-**FR7: Error Handling**
+**FR9: Error Handling**
 - **Requirement:** Gracefully handle storage errors
 - **Acceptance Criteria:**
   - Catch and log localStorage errors
@@ -197,11 +233,28 @@ interface TablePreferences {
    - Graceful degradation if storage unavailable
    - Log errors without breaking application
 
-### 5.4. Performance
+### 5.4. Feature Flag Implementation
+
+**Feature Flag:** `persistentFiltering`  
+**Environment Variable:** `NEXT_PUBLIC_FEATURE_PERSISTENT_FILTERING`  
+**Default:** `true` (enabled by default)  
+**Location:** `src/lib/featureFlags.ts`
+
+**Toggle Behavior:**
+- When feature flag is disabled: Feature completely hidden, no persistence functionality
+- When feature flag is enabled: Full persistent filtering functionality available
+- Feature flag can be toggled via Settings Modal
+- Feature flag state checked during component initialization
+- Saved filters loaded only if feature flag is enabled
+
+### 5.5. Performance Optimizations
 
 - **Debounced Saves:** 500ms delay to avoid excessive writes
 - **Lazy Loading:** Filters loaded only when persistence enabled
 - **Minimal Overhead:** localStorage operations are synchronous and fast
+- **Synchronous Initialization:** `debouncedFilters` initialized with saved filters during component initialization to prevent double API calls
+- **Feature Flag State Tracking:** Tracks previous feature flag state to detect enable/disable transitions
+- **Immediate Filter Application:** Saved filters applied synchronously when feature flag is enabled to prevent race conditions
 
 ---
 
@@ -257,6 +310,37 @@ interface TablePreferences {
 **Scenario:** localStorage not available (private browsing, old browser)  
 **Handling:** Check `typeof window !== 'undefined'` and `localStorage` availability, fallback gracefully
 
+### 7.5. Feature Flag Toggle
+
+**Scenario:** Feature flag toggled from disabled to enabled  
+**Handling:** 
+- Detect feature flag state change using ref tracking
+- Load saved filters if they exist
+- Update both `activeFilters` and `debouncedFilters` synchronously
+- Prevent double API calls by updating `debouncedFilters` immediately
+
+**Scenario:** Feature flag toggled from enabled to disabled  
+**Handling:**
+- Set `persistentFiltering` to `false`
+- Clear saved filters from preferences
+- Keep current filters visible (they just won't persist)
+
+### 7.6. Double API Call Prevention
+
+**Scenario:** Component mounts with saved filters  
+**Handling:**
+- Initialize `debouncedFilters` with saved filters during component initialization (lazy initializer)
+- Check feature flag and persistent filtering preference in initializer
+- Compute cache key correctly from the start with saved filters
+- No initial API call with empty filters
+
+**Scenario:** Feature flag enabled after component mount  
+**Handling:**
+- Track previous feature flag state using ref
+- Detect when feature flag transitions from disabled to enabled
+- Load saved filters and update both `activeFilters` and `debouncedFilters` synchronously
+- Prevent race conditions by updating state in same render cycle
+
 ---
 
 ## 8. Security Considerations
@@ -298,12 +382,16 @@ interface TablePreferences {
 
 ### 10.1. Functional Acceptance
 
-- ✅ Toggle button appears in filter panel header
+- ✅ Feature flag controls persistent filtering visibility and functionality
+- ✅ Toggle button appears in filter panel header (only when feature flag enabled)
 - ✅ Toggle state persists per table
 - ✅ Filters saved when persistence enabled
 - ✅ Filters restored when returning to table
 - ✅ Filters cleared when persistence disabled
 - ✅ "Clear all filters" clears both active and saved filters
+- ✅ Feature flag toggle works without breaking or causing double API calls
+- ✅ No double API calls when loading saved filters on mount
+- ✅ No double API calls when feature flag is toggled
 
 ### 10.2. Security Acceptance
 
@@ -320,6 +408,9 @@ interface TablePreferences {
 - ✅ No performance degradation
 - ✅ Works across browser sessions
 - ✅ Per-table independence
+- ✅ Filters load instantly without visible delay
+- ✅ No "blinking" effect when filters are restored
+- ✅ Smooth feature flag toggle experience
 
 ---
 
@@ -330,6 +421,9 @@ interface TablePreferences {
 - **Toggle UI:** `src/components/templates/ListDetailTemplate.tsx` (filter panel header)
 - **Persistence Logic:** `src/lib/tablePreferences.ts` (save/load functions)
 - **Security:** `src/lib/tablePreferences.ts` (sanitization functions)
+- **Feature Flag:** `src/lib/featureFlags.ts` (feature flag definition)
+- **Feature Flag Toggle:** `src/components/SettingsModal.tsx` (Settings UI)
+- **Filter Initialization:** `src/components/templates/ListDetailTemplate.tsx` (debouncedFilters initialization)
 
 ### 11.2. Key Functions
 
@@ -337,6 +431,9 @@ interface TablePreferences {
 - `getTablePreferences()`: Loads preferences with sanitization
 - `sanitizeFilterValue()`: Sanitizes individual filter values
 - `sanitizeActiveFilters()`: Sanitizes entire filter object
+- `isFeatureEnabled('persistentFiltering')`: Checks if feature flag is enabled
+- `debouncedFilters` lazy initializer: Initializes with saved filters to prevent double API calls
+- `prevFeatureFlagRef`: Tracks previous feature flag state to detect enable/disable transitions
 
 ### 11.3. Testing Considerations
 
@@ -345,6 +442,15 @@ interface TablePreferences {
 - Test localStorage quota exceeded scenario
 - Test with corrupted localStorage data
 - Test toggle behavior across page navigations
+- Test feature flag toggle from disabled to enabled
+- Test feature flag toggle from enabled to disabled
+- Test that no double API calls occur when:
+  - Component mounts with saved filters
+  - Feature flag is toggled from disabled to enabled
+  - Feature flag is toggled from enabled to disabled
+  - Persistent filtering toggle is changed
+- Test that filters load instantly without "blinking" effect
+- Test that cache key is computed correctly with saved filters from the start
 
 ---
 
