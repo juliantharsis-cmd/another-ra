@@ -168,11 +168,16 @@ export default function ListDetailTemplate<T extends { id: string }>({
     10
   )
 
+  // Feature flag check - must be defined before useState initializers that use it
+  const isTableActionsV2Enabled = isFeatureEnabled('tableActionsV2')
+  const isPersistentFilteringEnabled = isFeatureEnabled('persistentFiltering')
+
   // Filter and sort state
   const [searchQuery, setSearchQuery] = useState('')
   
-  // Persistent filtering preference (stored per table)
+  // Persistent filtering preference (stored per table) - only if feature flag is enabled
   const [persistentFiltering, setPersistentFiltering] = useState(() => {
+    if (!isPersistentFilteringEnabled) return false
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(`persistent_filtering_${entityNamePlural}`)
       return stored !== 'false' // Default to true (persistent)
@@ -180,16 +185,16 @@ export default function ListDetailTemplate<T extends { id: string }>({
     return true
   })
   
-  // Load saved filters from preferences (only if persistent filtering is enabled)
+  // Load saved filters from preferences (only if persistent filtering is enabled and feature flag is on)
   const savedFilters = useMemo(() => {
-    if (!persistentFiltering) return {}
+    if (!isPersistentFilteringEnabled || !persistentFiltering) return {}
     const prefs = getTablePreferences(entityNamePlural)
     return prefs?.activeFilters || {}
-  }, [entityNamePlural, persistentFiltering])
+  }, [entityNamePlural, persistentFiltering, isPersistentFilteringEnabled])
   
   // Initialize activeFilters with saved filters synchronously to prevent double API calls
   const [activeFilters, setActiveFilters] = useState<Record<string, string | string[]>>(() => {
-    if (persistentFiltering) {
+    if (isPersistentFilteringEnabled && persistentFiltering) {
       const prefs = getTablePreferences(entityNamePlural)
       return prefs?.activeFilters || {}
     }
@@ -206,7 +211,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
     
     // Only load saved filters on initial mount for this table, not when toggling persistence
     // This handles the case where persistentFiltering changes from false to true on mount
-    if (hasLoadedInitialFilters.current !== entityNamePlural && persistentFiltering) {
+    if (hasLoadedInitialFilters.current !== entityNamePlural && isPersistentFilteringEnabled && persistentFiltering) {
       const prefs = getTablePreferences(entityNamePlural)
       if (prefs?.activeFilters && Object.keys(prefs.activeFilters).length > 0) {
         // Only update if current filters are empty (to avoid overwriting user's current filters)
@@ -220,7 +225,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
       hasLoadedInitialFilters.current = entityNamePlural
     }
     // Note: We don't clear filters when disabling persistence - user keeps their current view
-  }, [entityNamePlural, persistentFiltering]) // Include persistentFiltering but use ref to prevent re-loading when toggling
+  }, [entityNamePlural, persistentFiltering, isPersistentFilteringEnabled]) // Include persistentFiltering but use ref to prevent re-loading when toggling
   const [sortBy, setSortBy] = useState<string>(defaultSort?.field || '')
   const [sortOrder, setSortOrder] = useState<SortDirection>(defaultSort?.order || 'asc')
 
@@ -230,9 +235,6 @@ export default function ListDetailTemplate<T extends { id: string }>({
 
   // Search suggestions
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
-
-  // Feature flag check - must be defined before useState initializers that use it
-  const isTableActionsV2Enabled = isFeatureEnabled('tableActionsV2')
 
   // Column visibility - load from preferences if feature enabled
   const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
@@ -1208,9 +1210,9 @@ export default function ListDetailTemplate<T extends { id: string }>({
     setCurrentPage(1)
   }, [])
   
-  // Save filters to preferences when they change (debounced) - only if persistent filtering is enabled
+  // Save filters to preferences when they change (debounced) - only if persistent filtering is enabled and feature flag is on
   useEffect(() => {
-    if (!persistentFiltering) return
+    if (!isPersistentFilteringEnabled || !persistentFiltering) return
     
     const timer = setTimeout(() => {
       const prefs = getTablePreferences(entityNamePlural) || {
@@ -1224,17 +1226,19 @@ export default function ListDetailTemplate<T extends { id: string }>({
     }, 500) // Debounce saves by 500ms
     
     return () => clearTimeout(timer)
-  }, [activeFilters, entityNamePlural, persistentFiltering])
+  }, [activeFilters, entityNamePlural, persistentFiltering, isPersistentFilteringEnabled])
   
-  // Save persistent filtering preference
+  // Save persistent filtering preference (only if feature flag is enabled)
   useEffect(() => {
+    if (!isPersistentFilteringEnabled) return
     if (typeof window !== 'undefined') {
       localStorage.setItem(`persistent_filtering_${entityNamePlural}`, String(persistentFiltering))
     }
-  }, [persistentFiltering, entityNamePlural])
+  }, [persistentFiltering, entityNamePlural, isPersistentFilteringEnabled])
   
-  // Toggle persistent filtering
+  // Toggle persistent filtering (only if feature flag is enabled)
   const handleTogglePersistentFiltering = useCallback(() => {
+    if (!isPersistentFilteringEnabled) return
     const newValue = !persistentFiltering
     setPersistentFiltering(newValue)
     
@@ -1260,7 +1264,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
         activeFilters: {},
       })
     }
-  }, [persistentFiltering, entityNamePlural, activeFilters])
+  }, [persistentFiltering, entityNamePlural, activeFilters, isPersistentFilteringEnabled])
   
   // Handle multi-select filter toggle
   const handleMultiSelectToggle = useCallback((filterKey: string, optionValue: string) => {
@@ -1289,8 +1293,8 @@ export default function ListDetailTemplate<T extends { id: string }>({
     setActiveFilters({})
     setSearchQuery('')
     setCurrentPage(1)
-    // Clear saved filters from preferences (only if persistent filtering is enabled)
-    if (persistentFiltering) {
+    // Clear saved filters from preferences (only if persistent filtering is enabled and feature flag is on)
+    if (isPersistentFilteringEnabled && persistentFiltering) {
       const prefs = getTablePreferences(entityNamePlural) || {
         columnVisibility: {},
         columnOrder: [],
@@ -2121,9 +2125,10 @@ export default function ListDetailTemplate<T extends { id: string }>({
             <div className="p-4 space-y-4">
               {/* Panel Header with Clear Button and Persistent Toggle */}
               <div className="flex items-center justify-between pb-3 border-b border-neutral-200">
-                <h3 className="text-sm font-semibold text-neutral-900">Filter Options</h3>
-                <div className="flex items-center gap-3">
-                  {/* Persistent Filtering Toggle */}
+              <h3 className="text-sm font-semibold text-neutral-900">Filter Options</h3>
+              <div className="flex items-center gap-3">
+                {/* Persistent Filtering Toggle - only show if feature flag is enabled */}
+                {isPersistentFilteringEnabled && (
                   <button
                     onClick={handleTogglePersistentFiltering}
                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
@@ -2147,6 +2152,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
                     </svg>
                     <span>Persistent</span>
                   </button>
+                )}
                   
                   {(searchQuery || Object.values(activeFilters).some(v => v)) && (
                     <button
