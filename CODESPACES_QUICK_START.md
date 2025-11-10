@@ -73,6 +73,19 @@ tail -f frontend.log   # Frontend
 pkill -f "npm run dev"
 ```
 
+## Troubleshooting
+
+### Port 3001 Already in Use?
+```bash
+bash .devcontainer/fix-port-3001.sh
+```
+
+### CORS Errors?
+```bash
+bash .devcontainer/update-api-url.sh
+npm run dev  # Restart frontend
+```
+
 ## That's It! 🎉
 
 Your app runs exactly like locally, but in the cloud.

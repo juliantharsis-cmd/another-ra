@@ -136,6 +136,32 @@ Codespaces automatically forwards ports. You'll see notifications like:
 
 ## Troubleshooting
 
+### Port Already in Use (EADDRINUSE)
+
+If you see `Error: listen EADDRINUSE: address already in use :::3001`:
+
+**Quick Fix:**
+```bash
+# Run the fix script
+bash .devcontainer/fix-port-3001.sh
+```
+
+**Manual Fix:**
+```bash
+# Find what's using port 3001
+lsof -ti:3001
+# or
+fuser 3001/tcp
+
+# Kill the process
+lsof -ti:3001 | xargs kill -9
+# or
+fuser -k 3001/tcp
+
+# Then restart the backend
+cd server && npm run dev
+```
+
 ### Ports Not Forwarding
 
 1. Go to **"Ports"** tab
