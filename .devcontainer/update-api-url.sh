@@ -7,7 +7,7 @@ echo "🔧 Updating API URL configuration..."
 
 if [ -n "$CODESPACE_NAME" ]; then
   # We're in Codespaces
-  CODESPACE_BACKEND_URL="https://${CODESPACE_NAME}-3001.preview.app.github.dev"
+  CODESPACE_BACKEND_URL="https://${CODESPACE_NAME}-3001.app.github.dev"
   echo "✅ Detected Codespaces: $CODESPACE_NAME"
   echo "   Backend URL: $CODESPACE_BACKEND_URL"
   
