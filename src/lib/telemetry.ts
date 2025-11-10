@@ -10,6 +10,7 @@ export type TelemetryEvent =
   | { type: 'table.import_clicked'; tableId: string }
   | { type: 'table.export_clicked'; tableId: string }
   | { type: 'table.configure'; tableId: string; changes: Record<string, any> }
+  | { type: 'table.share_clicked'; tableId: string }
 
 /**
  * Track a telemetry event

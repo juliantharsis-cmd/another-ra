@@ -64,6 +64,12 @@ const FEATURE_SECTIONS: FeatureSection[] = [
         description: 'Enable settings modal for managing feature flags and application settings',
         section: 'ui',
       },
+      {
+        key: 'persistentFiltering',
+        label: 'Persistent Filtering',
+        description: 'Enable persistent filtering - filters are saved and restored across browser sessions',
+        section: 'ui',
+      },
     ],
   },
   {

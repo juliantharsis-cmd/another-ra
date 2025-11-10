@@ -23,7 +23,7 @@ const DEFAULT_COLUMN_WIDTH = 150
 const KEYBOARD_STEP = 8
 const KEYBOARD_STEP_LARGE = 32
 
-interface ColumnInfo {
+export interface ColumnInfo {
   key: string
   minWidth?: number
   maxWidth?: number

@@ -45,6 +45,11 @@ const STORAGE_PREFIX_LEGACY = 'table_prefs_legacy_' // For migration tracking
  */
 export function getTablePreferences(tableId: string): TablePreferences | null {
   try {
+    // Check for window to avoid SSR/hydration issues
+    if (typeof window === 'undefined') {
+      return null
+    }
+    
     // Sanitize table ID to prevent injection
     const sanitizedTableId = typeof tableId === 'string' ? tableId.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 100) : String(tableId)
     if (!sanitizedTableId) {

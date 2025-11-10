@@ -21,7 +21,7 @@ import ColumnResizer from '../tables/ColumnResizer'
 import { useUserPreferences } from '@/hooks/useUserPreferences'
 import { OptimizedTableCell } from '../tables/OptimizedTableCell'
 import { TableSkeleton } from '../tables/TableSkeleton'
-import { FixedSizeList } from 'react-window'
+// FixedSizeList import removed - not currently used
 import { useTableDataCache } from '@/hooks/useTableDataCache'
 import { enhanceWithCachedRelationships } from '@/lib/utils/enhanceWithCachedRelationships'
 import { fetchFieldMapping, getFieldMapping } from '@/lib/fieldIdMapping'
@@ -176,51 +176,94 @@ export default function ListDetailTemplate<T extends { id: string }>({
   const [searchQuery, setSearchQuery] = useState('')
   
   // Persistent filtering preference (stored per table) - only if feature flag is enabled
-  const [persistentFiltering, setPersistentFiltering] = useState(() => {
-    if (!isPersistentFilteringEnabled) return false
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(`persistent_filtering_${entityNamePlural}`)
-      return stored !== 'false' // Default to true (persistent)
-    }
-    return true
+  // Initialize with default to avoid hydration mismatch (load from localStorage in useEffect)
+  const [persistentFiltering, setPersistentFiltering] = useState<boolean>(() => {
+    // Always return same default on server and client to avoid hydration mismatch
+    return isPersistentFilteringEnabled ? true : false // Default to true if feature enabled
   })
   
+  // Load persistent filtering preference from localStorage after mount (client-side only)
+  useEffect(() => {
+    if (!isPersistentFilteringEnabled) {
+      setPersistentFiltering(false)
+      return
+    }
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(`persistent_filtering_${entityNamePlural}`)
+      if (stored !== null) {
+        setPersistentFiltering(stored !== 'false')
+      }
+    }
+  }, [entityNamePlural, isPersistentFilteringEnabled])
+  
   // Load saved filters from preferences (only if persistent filtering is enabled and feature flag is on)
+  // Use useMemo but only access localStorage on client side to avoid hydration mismatch
   const savedFilters = useMemo(() => {
     if (!isPersistentFilteringEnabled || !persistentFiltering) return {}
+    if (typeof window === 'undefined') return {} // Return empty on server to avoid hydration mismatch
     const prefs = getTablePreferences(entityNamePlural)
     return prefs?.activeFilters || {}
   }, [entityNamePlural, persistentFiltering, isPersistentFilteringEnabled])
   
-  // Initialize activeFilters with saved filters synchronously to prevent double API calls
-  const [activeFilters, setActiveFilters] = useState<Record<string, string | string[]>>(() => {
-    if (isPersistentFilteringEnabled && persistentFiltering) {
-      const prefs = getTablePreferences(entityNamePlural)
-      return prefs?.activeFilters || {}
-    }
-    return {}
-  })
+  // Initialize activeFilters with empty object to avoid hydration mismatch
+  // Load saved filters in useEffect after mount
+  const [activeFilters, setActiveFilters] = useState<Record<string, string | string[]>>({})
   const hasLoadedInitialFilters = useRef<string | null>(null)
   
-  // Load saved filters when table changes (only once per table, not when toggling)
+  // Track previous feature flag state to detect when it's enabled
+  const prevFeatureFlagRef = useRef(isPersistentFilteringEnabled)
+  
+  // Load saved filters from localStorage after mount (client-side only, to avoid hydration mismatch)
+  // This ensures activeFilters is in sync with debouncedFilters (which was initialized with saved filters)
   useEffect(() => {
     // Reset ref when table changes
     if (hasLoadedInitialFilters.current !== entityNamePlural) {
       hasLoadedInitialFilters.current = null
+      prevFeatureFlagRef.current = isPersistentFilteringEnabled
+    }
+    
+    // Handle feature flag being enabled (from disabled state)
+    const featureJustEnabled = !prevFeatureFlagRef.current && isPersistentFilteringEnabled
+    if (featureJustEnabled) {
+      prevFeatureFlagRef.current = isPersistentFilteringEnabled
+      // When feature flag is enabled, load saved filters if they exist
+      if (typeof window !== 'undefined' && persistentFiltering) {
+        const prefs = getTablePreferences(entityNamePlural)
+        if (prefs?.activeFilters && Object.keys(prefs.activeFilters).length > 0) {
+          const savedFilters = prefs.activeFilters
+          // Only update if current filters are empty (to avoid overwriting user's current filters)
+          setActiveFilters(prev => {
+            if (Object.keys(prev).length === 0 && savedFilters) {
+              // Update debouncedFilters synchronously to prevent double API call
+              setDebouncedFilters(savedFilters)
+              return savedFilters
+            }
+            return prev
+          })
+        }
+      }
+    } else {
+      // Update ref to track current state
+      prevFeatureFlagRef.current = isPersistentFilteringEnabled
     }
     
     // Only load saved filters on initial mount for this table, not when toggling persistence
     // This handles the case where persistentFiltering changes from false to true on mount
     if (hasLoadedInitialFilters.current !== entityNamePlural && isPersistentFilteringEnabled && persistentFiltering) {
-      const prefs = getTablePreferences(entityNamePlural)
-      if (prefs?.activeFilters && Object.keys(prefs.activeFilters).length > 0) {
-        // Only update if current filters are empty (to avoid overwriting user's current filters)
-        setActiveFilters(prev => {
-          if (Object.keys(prev).length === 0 && prefs.activeFilters) {
-            return prefs.activeFilters
-          }
-          return prev
-        })
+      if (typeof window !== 'undefined') {
+        const prefs = getTablePreferences(entityNamePlural)
+        if (prefs?.activeFilters && Object.keys(prefs.activeFilters).length > 0) {
+          // Only update if current filters are empty (to avoid overwriting user's current filters)
+          const savedFilters = prefs.activeFilters
+          setActiveFilters(prev => {
+            if (Object.keys(prev).length === 0 && savedFilters) {
+              return savedFilters
+            }
+            return prev
+          })
+          // debouncedFilters was already initialized with saved filters, so no need to update it here
+          // This prevents a second API call
+        }
       }
       hasLoadedInitialFilters.current = entityNamePlural
     }
@@ -782,12 +825,15 @@ export default function ListDetailTemplate<T extends { id: string }>({
     setColumnWidths,
     resizingColumn,
     handleResizeStart,
-    focusedResizer = null,
-    setFocusedResizer = () => {},
-    handleAutoSize = () => {},
-    handleDoubleClick = () => {},
-    handleKeyboardResize = () => {},
+    ...restResizingProps
   } = resizing
+  
+  // Extract V2-specific properties with type safety
+  const focusedResizer = isColumnResizeV2Enabled && 'focusedResizer' in resizing ? resizing.focusedResizer : null
+  const setFocusedResizer = isColumnResizeV2Enabled && 'setFocusedResizer' in resizing ? resizing.setFocusedResizer : () => {}
+  const handleAutoSize = isColumnResizeV2Enabled && 'handleAutoSize' in resizing ? resizing.handleAutoSize : undefined
+  const handleDoubleClick = isColumnResizeV2Enabled && 'handleDoubleClick' in resizing ? resizing.handleDoubleClick : undefined
+  const handleKeyboardResize = isColumnResizeV2Enabled && 'handleKeyboardResize' in resizing ? resizing.handleKeyboardResize : undefined
 
   // Track if we've initialized widths to prevent re-initialization
   const widthsInitializedRef = useRef(false)
@@ -880,9 +926,27 @@ export default function ListDetailTemplate<T extends { id: string }>({
   }, [searchQuery])
   
   // Debounced filter changes (200ms as per optimization spec)
-  // Initialize with activeFilters to prevent double API calls on mount
-  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string | string[]>>(activeFilters)
+  // Initialize with saved filters if persistent filtering is enabled to prevent double API calls on mount
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string | string[]>>(() => {
+    // Lazy initialization: check localStorage on client side only
+    // Check both the feature flag and the actual persistent filtering preference
+    if (typeof window !== 'undefined' && isPersistentFilteringEnabled) {
+      // Check if persistent filtering is enabled (default to true if feature flag is on)
+      const storedPersistent = localStorage.getItem(`persistent_filtering_${entityNamePlural}`)
+      const isPersistent = storedPersistent === null ? true : storedPersistent !== 'false'
+      
+      if (isPersistent) {
+        const prefs = getTablePreferences(entityNamePlural)
+        if (prefs?.activeFilters && Object.keys(prefs.activeFilters).length > 0) {
+          return prefs.activeFilters
+        }
+      }
+    }
+    return activeFilters
+  })
+  
   useEffect(() => {
+    // Normal debounce for user-initiated filter changes
     const timer = setTimeout(() => {
       setDebouncedFilters(activeFilters)
       setCurrentPage(1)
@@ -1362,7 +1426,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
       
       // For linked record fields (like greenHouseGas), clear the resolved name fields
       // so we don't show stale names. The resolved names will be set when we get the server response.
-      const optimisticData = { ...data }
+      const optimisticData: any = { ...data }
       if ('greenHouseGas' in data) {
         // Clear the resolved name so we don't show stale data
         optimisticData.greenHouseGasName = undefined
