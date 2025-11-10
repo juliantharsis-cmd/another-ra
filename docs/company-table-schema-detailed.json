@@ -1,0 +1,2720 @@
+{
+  "company": {
+    "id": "tbl82H6ezrakMSkV1",
+    "name": "Companies 🏢",
+    "primaryFieldId": "fldAuRGuZlxKQs1Nh",
+    "fields": [
+      {
+        "type": "singleLineText",
+        "id": "fldAuRGuZlxKQs1Nh",
+        "name": "Company Name"
+      },
+      {
+        "type": "singleLineText",
+        "id": "fldo9eJ4IfbVtrNQv",
+        "name": "ISIN Code"
+      },
+      {
+        "type": "singleLineText",
+        "id": "fld0AfRn6UjpT9MIZ",
+        "name": "Name"
+      },
+      {
+        "type": "singleSelect",
+        "options": {
+          "choices": [
+            {
+              "id": "seluCyUb3DY6RJw52",
+              "name": "Active",
+              "color": "greenBright"
+            },
+            {
+              "id": "seltECOadMgjbrk3m",
+              "name": "Closed",
+              "color": "grayDark1"
+            }
+          ]
+        },
+        "id": "fldF5Z5kHC1mAu8da",
+        "name": "Status"
+      },
+      {
+        "type": "singleSelect",
+        "options": {
+          "choices": [
+            {
+              "id": "seld6oPVKRfiKqWaA",
+              "name": "Asset managers",
+              "color": "blueLight2"
+            },
+            {
+              "id": "sellmJQAoFC5SrhFc",
+              "name": "Specialty chemicals",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "selgwJcbdhQO5qO3I",
+              "name": "Biotechnology",
+              "color": "tealLight2"
+            },
+            {
+              "id": "selg4HrnFAHbZ4JBj",
+              "name": "Software",
+              "color": "greenLight2"
+            },
+            {
+              "id": "selgv9bPfeHM0RBW1",
+              "name": "Gambling",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "selhEEXN6SH2RAGwD",
+              "name": "Marketing",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "selgxyJ47SuFnBldp",
+              "name": "Fabricated metal components",
+              "color": "redLight2"
+            },
+            {
+              "id": "selJqQKrqwqIZ0QP9",
+              "name": "Non-alcoholic beverages",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "selOON8nAKpMBTtOw",
+              "name": "Marine freight",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "selVxkeOFeJe44p2Y",
+              "name": "CCGT generation",
+              "color": "grayLight2"
+            },
+            {
+              "id": "selxdIg8VoNKo7naA",
+              "name": "Consumer services",
+              "color": "blueLight1"
+            },
+            {
+              "id": "sel4lF5lL9TVm1iVf",
+              "name": "Other food processing",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "sel7GzWajMlFkkjgC",
+              "name": "Banks",
+              "color": "tealLight1"
+            },
+            {
+              "id": "selZmJDuNHRF8PM98",
+              "name": "Other base chemicals",
+              "color": "greenLight1"
+            },
+            {
+              "id": "sel5sqVRLLQeTDol5",
+              "name": "Electricity networks",
+              "color": "yellowLight1"
+            },
+            {
+              "id": "selv9pLyv815MVzzE",
+              "name": "Agricultural chemicals",
+              "color": "orangeLight1"
+            },
+            {
+              "id": "selL2sSl56vvyoLXT",
+              "name": "Electronic equipment",
+              "color": "redLight1"
+            },
+            {
+              "id": "selBzZSSZlssTWdFA",
+              "name": "Medical equipment",
+              "color": "pinkLight1"
+            },
+            {
+              "id": "selVUlqe73xXVctZH",
+              "name": "Pharmaceuticals",
+              "color": "purpleLight1"
+            },
+            {
+              "id": "selaqSPqiH7ui1SUk",
+              "name": "Engineering services",
+              "color": "grayLight1"
+            },
+            {
+              "id": "selMExYC9Esfo3RDV",
+              "name": "Infrastructure upkeep & management",
+              "color": "blueBright"
+            },
+            {
+              "id": "sel3KfIJa3V6l0ZFT",
+              "name": "Electronic components",
+              "color": "cyanBright"
+            },
+            {
+              "id": "selju6jBXemzIqC4q",
+              "name": "Electrical equipment",
+              "color": "tealBright"
+            },
+            {
+              "id": "selfLSrrs62CU1K2n",
+              "name": "Commercial services",
+              "color": "greenBright"
+            },
+            {
+              "id": "selMWYIhNBq8lWLX6",
+              "name": "Discretionary delivery retail",
+              "color": "yellowBright"
+            },
+            {
+              "id": "sel8pXGcHK3mI3End",
+              "name": "Cement",
+              "color": "orangeBright"
+            },
+            {
+              "id": "selbGmzIYhvaCLzhP",
+              "name": "Communications equipment",
+              "color": "redBright"
+            },
+            {
+              "id": "sel6IsldXHHlOgtX4",
+              "name": "IT services",
+              "color": "pinkBright"
+            },
+            {
+              "id": "selSFdiAcF4OYwRDx",
+              "name": "Renewable energy construction",
+              "color": "purpleBright"
+            },
+            {
+              "id": "selSum91Qar9PwJRo",
+              "name": "Hotels & lodging",
+              "color": "grayBright"
+            },
+            {
+              "id": "selJqswKnKdI0EjAJ",
+              "name": "Coal generation",
+              "color": "blueDark1"
+            },
+            {
+              "id": "selCYScKGT0te9JFR",
+              "name": "Computer hardware",
+              "color": "cyanDark1"
+            },
+            {
+              "id": "selKArmQ3d34kcgS9",
+              "name": "Iron & steel",
+              "color": "tealDark1"
+            },
+            {
+              "id": "selywrK7vooN5KCv5",
+              "name": "Telecommunications services",
+              "color": "greenDark1"
+            },
+            {
+              "id": "selnYAK0u1KkfWAOH",
+              "name": "Chemicals wholesale & distribution",
+              "color": "yellowDark1"
+            },
+            {
+              "id": "selfnhBgZ3mHxD74C",
+              "name": "Non-nitrogenous fertilizers",
+              "color": "orangeDark1"
+            },
+            {
+              "id": "selgxWQQS1SPQnTjW",
+              "name": "Other renewable generation",
+              "color": "redDark1"
+            },
+            {
+              "id": "selnpbnAt1eJMMTEG",
+              "name": "Transportation support services",
+              "color": "pinkDark1"
+            },
+            {
+              "id": "selweneTh3RwQ7qst",
+              "name": "Apparel stores",
+              "color": "purpleDark1"
+            },
+            {
+              "id": "selMwKX7Wpy592GRZ",
+              "name": "Industrial machinery distribution",
+              "color": "grayDark1"
+            },
+            {
+              "id": "selj0mJNdheraSVuF",
+              "name": "Apparel design & manufacturing",
+              "color": "blueLight2"
+            },
+            {
+              "id": "selSBVDi1U1fi1BKs",
+              "name": "Insurance",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "seldnVgPYZ3mJ6PDp",
+              "name": "Specialist retail",
+              "color": "tealLight2"
+            },
+            {
+              "id": "selRAr5m4araaGKA6",
+              "name": "Electrical equipment, Semiconductors",
+              "color": "greenLight2"
+            },
+            {
+              "id": "selG0AfpNEd8fYdtD",
+              "name": "Plastic products",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "seltF3gRLvPWjfaAh",
+              "name": "Industrial machinery",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "selu5J7TqUrplrJqE",
+              "name": "REIT",
+              "color": "redLight2"
+            },
+            {
+              "id": "selXPzpz3Q0CNffpX",
+              "name": "Supermarkets, food & drugstores",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "sel4caGBvolwCHbsw",
+              "name": "Real estate owners & developers",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "selAZIy97U3UQVSYC",
+              "name": "Vehicles & machinery rental & leasing",
+              "color": "grayLight2"
+            },
+            {
+              "id": "selsQc7MslwMvVxxv",
+              "name": "Other renewable energy equipment",
+              "color": "blueLight1"
+            },
+            {
+              "id": "sel9MhNtr2j6OOQ29",
+              "name": "Aerospace",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "seltNTHYJVRRdKJND",
+              "name": "Hydro generation",
+              "color": "tealLight1"
+            },
+            {
+              "id": "selq2j9AhAJ96a4Er",
+              "name": "Non-residential building construction",
+              "color": "greenLight1"
+            },
+            {
+              "id": "sellzi3u1otqjU7hS",
+              "name": "Glass products",
+              "color": "yellowLight1"
+            },
+            {
+              "id": "selpKVZiBxMk8d0Zj",
+              "name": "Agriculture, construction & mining machinery",
+              "color": "orangeLight1"
+            },
+            {
+              "id": "selziey0WPcBDTxCv",
+              "name": "Health care services",
+              "color": "redLight1"
+            },
+            {
+              "id": "sel5HreEwaPR1JNG5",
+              "name": "Precious metals & minerals mining",
+              "color": "pinkLight1"
+            },
+            {
+              "id": "sel8wLuvDFz4hONQC",
+              "name": "Media",
+              "color": "purpleLight1"
+            },
+            {
+              "id": "selV41NoCnAktLUzh",
+              "name": "Passenger airlines",
+              "color": "grayLight1"
+            },
+            {
+              "id": "selOx1wRbxMnoKBZN",
+              "name": "Inorganic base chemicals",
+              "color": "blueBright"
+            },
+            {
+              "id": "seluH05oCugGGE1Hr",
+              "name": "Pollution control equipment",
+              "color": "cyanBright"
+            },
+            {
+              "id": "selc2dc5WwY8qaf19",
+              "name": "Engines & motors",
+              "color": "tealBright"
+            },
+            {
+              "id": "selIXldrzkyGyidie",
+              "name": "Oil & gas extraction",
+              "color": "greenBright"
+            },
+            {
+              "id": "selrmXzL6XC9EBLqL",
+              "name": "Energy services & equipment",
+              "color": "yellowBright"
+            },
+            {
+              "id": "selCB35AkJLMeDCg8",
+              "name": "Energy infrastructure construction",
+              "color": "orangeBright"
+            },
+            {
+              "id": "selD0mRkZMfd7WUhY",
+              "name": "Solar generation",
+              "color": "redBright"
+            },
+            {
+              "id": "selANDZl4juy1VvIN",
+              "name": "Real estate services",
+              "color": "pinkBright"
+            },
+            {
+              "id": "selHsYnIsth84nwcp",
+              "name": "Pharma & health care supplies wholesale & distribution",
+              "color": "purpleBright"
+            },
+            {
+              "id": "selRF2DWnXHjzwzGS",
+              "name": "Electricity networks, Other renewable energy equipment",
+              "color": "grayBright"
+            },
+            {
+              "id": "selTQtV4jQmVhvekV",
+              "name": "Semiconductors",
+              "color": "blueDark1"
+            },
+            {
+              "id": "selBjPzJmyIFNMDdz",
+              "name": "Print publishing",
+              "color": "cyanDark1"
+            },
+            {
+              "id": "selWHAXbfnYiFUSiG",
+              "name": "Oil & gas marketing & retailing",
+              "color": "tealDark1"
+            },
+            {
+              "id": "seliyj25JIJk1A8Ej",
+              "name": "Basic plastics",
+              "color": "greenDark1"
+            },
+            {
+              "id": "selaZdAheyuDX1NTD",
+              "name": "Web-based services",
+              "color": "yellowDark1"
+            },
+            {
+              "id": "selDvUdhASXaixJz9",
+              "name": "Technology hardware wholesale & distribution",
+              "color": "orangeDark1"
+            },
+            {
+              "id": "selX3wsM4kZbJQ10i",
+              "name": "Railroad rolling stock",
+              "color": "redDark1"
+            },
+            {
+              "id": "selmUoXEbZgUOnpLV",
+              "name": "Oil & gas pipelines & storage",
+              "color": "pinkDark1"
+            },
+            {
+              "id": "selc1O97xwCPAevba",
+              "name": "Other non-ferrous metals",
+              "color": "purpleDark1"
+            },
+            {
+              "id": "seltkVJpd8426vt4f",
+              "name": "Biofuels",
+              "color": "grayDark1"
+            },
+            {
+              "id": "selaNNioKztjKsIAK",
+              "name": "Pulp & paper mills",
+              "color": "blueLight2"
+            },
+            {
+              "id": "selc0iwulgllXEMHH",
+              "name": "Tobacco products",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "selRIyjy1bogdalVu",
+              "name": "Aluminum",
+              "color": "tealLight2"
+            },
+            {
+              "id": "selrSuK96kRuEDf93",
+              "name": "Batteries",
+              "color": "greenLight2"
+            },
+            {
+              "id": "selmE9HK1wWVrdSCg",
+              "name": "Alcoholic beverages",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "selocZAcadApGRIro",
+              "name": "Waste management",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "selJJcuBPsvxVdeFe",
+              "name": "Health care supplies",
+              "color": "redLight2"
+            },
+            {
+              "id": "sel82l7NaJbnBOd1w",
+              "name": "Other containers & packaging",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "seldK4unhixCQNcQT",
+              "name": "Sporting goods",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "sellVWDgoZifS0aC5",
+              "name": "Other financial",
+              "color": "grayLight2"
+            },
+            {
+              "id": "selUIGxofevEJz8rl",
+              "name": "Education services",
+              "color": "blueLight1"
+            },
+            {
+              "id": "seltcB7XEKU1AY3zF",
+              "name": "Water supply networks",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "selQEinDrj2kyYihu",
+              "name": "Utility line construction",
+              "color": "tealLight1"
+            },
+            {
+              "id": "selTAcTUJY6W2hN97",
+              "name": "Department stores",
+              "color": "greenLight1"
+            },
+            {
+              "id": "selgk33sbRUtkGHnH",
+              "name": "Logistics - 3rd party",
+              "color": "yellowLight1"
+            },
+            {
+              "id": "selMr4kEWDKBckwnu",
+              "name": "Industrial services",
+              "color": "orangeLight1"
+            },
+            {
+              "id": "selvDVh607fngkhQq",
+              "name": "Personal care & household products",
+              "color": "redLight1"
+            },
+            {
+              "id": "selymndQvsqRyoeMi",
+              "name": "Automobiles",
+              "color": "pinkLight1"
+            },
+            {
+              "id": "selLJHyLq4bCnrdZz",
+              "name": "Rubber products",
+              "color": "purpleLight1"
+            },
+            {
+              "id": "selVCSQHIe20EIWCO",
+              "name": "Other non-ferrous ore mining",
+              "color": "grayLight1"
+            },
+            {
+              "id": "sel2Vn98yWgGijpXK",
+              "name": "Tires",
+              "color": "blueBright"
+            },
+            {
+              "id": "selUINNLZ2CjgnbF8",
+              "name": "Food & beverage amenities",
+              "color": "cyanBright"
+            },
+            {
+              "id": "selnoO05cWC0hWxPm",
+              "name": "Logistics - transport",
+              "color": "tealBright"
+            },
+            {
+              "id": "selRKW2U0NAIVDc3k",
+              "name": "Household appliances",
+              "color": "greenBright"
+            },
+            {
+              "id": "sel5c0Nu4cj8WEQTI",
+              "name": "Agricultural products wholesale",
+              "color": "yellowBright"
+            },
+            {
+              "id": "selXQRT4GacdKbCcL",
+              "name": "Fast food",
+              "color": "orangeBright"
+            },
+            {
+              "id": "selkSydgLNtdDPWtq",
+              "name": "Hypermarkets & superstores",
+              "color": "redBright"
+            },
+            {
+              "id": "selduflVArHUflGd5",
+              "name": "Metal containers & packaging",
+              "color": "pinkBright"
+            },
+            {
+              "id": "selSPWpxoEofhQB4c",
+              "name": "Other professional services",
+              "color": "purpleBright"
+            },
+            {
+              "id": "selcvzO1wDqsEfIyT",
+              "name": "Other building products",
+              "color": "grayBright"
+            },
+            {
+              "id": "selwrwKqbgpKgspQC",
+              "name": "Health care facilities",
+              "color": "blueDark1"
+            },
+            {
+              "id": "selZg7qU5K6CdbfKS",
+              "name": "Textiles",
+              "color": "cyanDark1"
+            },
+            {
+              "id": "selquYEzFe84kPwwb",
+              "name": "Recycling",
+              "color": "tealDark1"
+            },
+            {
+              "id": "selhRiWmpP7c0oL9a",
+              "name": "Residential building construction",
+              "color": "greenDark1"
+            },
+            {
+              "id": "selvfQ8QPGHE70voO",
+              "name": "Other vehicle equipment & systems",
+              "color": "yellowDark1"
+            },
+            {
+              "id": "seljaZVARAgsoMKr7",
+              "name": "Concrete products",
+              "color": "orangeDark1"
+            },
+            {
+              "id": "selGb2qUAAUj6ULHv",
+              "name": "Animal processing",
+              "color": "redDark1"
+            },
+            {
+              "id": "selSqXpKEb4JFN6i0",
+              "name": "Other crop farming",
+              "color": "pinkDark1"
+            },
+            {
+              "id": "selTzUkfWIbNFA6vS",
+              "name": "Copper",
+              "color": "purpleDark1"
+            },
+            {
+              "id": "sel0oHF0AbwkfsQIe",
+              "name": "Aquaculture",
+              "color": "grayDark1"
+            },
+            {
+              "id": "selNOMGFdIXZ73fhm",
+              "name": "Paper packaging",
+              "color": "blueLight2"
+            },
+            {
+              "id": "sela4hdxz5fmIllxF",
+              "name": "Munitions",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "selB3dZGwMEzDBaXd",
+              "name": "Aquaculture, Oil & gas extraction",
+              "color": "tealLight2"
+            },
+            {
+              "id": "selY8gpPtd2CMEviZ",
+              "name": "Finished wood products",
+              "color": "greenLight2"
+            },
+            {
+              "id": "sel74RvqIfFZkQNFe",
+              "name": "Chocolate confection",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "selZydpKhdtzzqvmR",
+              "name": "Metal processing",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "selKsqJCfeqc4odW6",
+              "name": "Oil & gas refining",
+              "color": "redLight2"
+            },
+            {
+              "id": "selle3Yq6sINzUWJA",
+              "name": "Iron ore mining",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "sel6SqqQpZ3FfzuTy",
+              "name": "Food & beverage wholesale",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "seli21JLZQJcjrQog",
+              "name": "Transportation infrastructure & other construction",
+              "color": "grayLight2"
+            },
+            {
+              "id": "selqQwsxH8zxMzsvR",
+              "name": "Printing services",
+              "color": "blueLight1"
+            },
+            {
+              "id": "selbnd4HDCZDo33S5",
+              "name": "Baked goods & cereals",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "selLZO3FxLhcTfIVx",
+              "name": "Recreational vehicles",
+              "color": "tealLight1"
+            },
+            {
+              "id": "selXNRJbXHh58pw1L",
+              "name": "Home & office wholesale",
+              "color": "greenLight1"
+            },
+            {
+              "id": "selJ5SEjAS8yiGXFW",
+              "name": "Consumer goods wholesale & rental",
+              "color": "yellowLight1"
+            },
+            {
+              "id": "sel7rqiEh6QsxFJIK",
+              "name": "Other non-wood building materials",
+              "color": "orangeLight1"
+            },
+            {
+              "id": "sel7JH7WOWwF0Tx66",
+              "name": "Dairy & egg products",
+              "color": "redLight1"
+            },
+            {
+              "id": "selCRRholxwKMbZQ5",
+              "name": "Rail freight",
+              "color": "pinkLight1"
+            },
+            {
+              "id": "selDRrBn0Wa2NlGE8",
+              "name": "Solar energy equipment",
+              "color": "purpleLight1"
+            },
+            {
+              "id": "selIsvlO3Jes2hFAs",
+              "name": "Sawmills & wood materials",
+              "color": "grayLight1"
+            },
+            {
+              "id": "seldaevqab8PAoykR",
+              "name": "Biomass generation",
+              "color": "blueBright"
+            },
+            {
+              "id": "selRX1zRrnQN6L5XD",
+              "name": "Air freight",
+              "color": "cyanBright"
+            },
+            {
+              "id": "selj8mgociloHz7u5",
+              "name": "Road freight",
+              "color": "tealBright"
+            },
+            {
+              "id": "selzz5LXa0V8WASaO",
+              "name": "Cattle farming",
+              "color": "greenBright"
+            },
+            {
+              "id": "sel8DjY5YuRT805R4",
+              "name": "Textile & apparel wholesale",
+              "color": "yellowBright"
+            },
+            {
+              "id": "sel56zrpK6LPPjy3y",
+              "name": "Fabricated metal components, Automotive interior",
+              "color": "orangeBright"
+            },
+            {
+              "id": "selH9jDEismAapAZD",
+              "name": "Accessories",
+              "color": "redBright"
+            },
+            {
+              "id": "sel9jJTPKCCpVSfoi",
+              "name": "Intermodal transport",
+              "color": "pinkBright"
+            },
+            {
+              "id": "selCSuekxvKEvfm5H",
+              "name": "Natural gas extraction",
+              "color": "purpleBright"
+            },
+            {
+              "id": "selJCCxqLH3Gy44nh",
+              "name": "Furniture",
+              "color": "grayBright"
+            },
+            {
+              "id": "selO6g8U8gfoxxogO",
+              "name": "Bus & taxi",
+              "color": "blueDark1"
+            },
+            {
+              "id": "sel5x9xUPC5TsVEyZ",
+              "name": "Other non-metallic minerals",
+              "color": "cyanDark1"
+            },
+            {
+              "id": "selYqRXsHk7c5lbWo",
+              "name": "Coal extraction & processing",
+              "color": "tealDark1"
+            },
+            {
+              "id": "selJWJqVvpCqjP9XG",
+              "name": "Travel services",
+              "color": "greenDark1"
+            },
+            {
+              "id": "selc3OEb5iHGLmOeE",
+              "name": "Recreation & entertainment facilities",
+              "color": "yellowDark1"
+            },
+            {
+              "id": "selsdFRP2N0f5TCuT",
+              "name": "Shipbuilding",
+              "color": "orangeDark1"
+            },
+            {
+              "id": "selI9oXRb2fCaV5qA",
+              "name": "Printing services, Paper products",
+              "color": "redDark1"
+            },
+            {
+              "id": "sel6pSVaStvlxFuQg",
+              "name": "Sugar",
+              "color": "pinkDark1"
+            },
+            {
+              "id": "selOXLyjrLw8I06Xe",
+              "name": "Paper products",
+              "color": "purpleDark1"
+            },
+            {
+              "id": "selUvSsxt2WFXAvuj",
+              "name": "Heavy vehicles",
+              "color": "grayDark1"
+            },
+            {
+              "id": "selMP6Kn716hTksYi",
+              "name": "Passenger rail",
+              "color": "blueLight2"
+            },
+            {
+              "id": "sellTKsDjUtv1j8zO",
+              "name": "Servers & data centers",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "selAbRe79BVQKSUZs",
+              "name": "Automotive interior",
+              "color": "tealLight2"
+            },
+            {
+              "id": "sel90Qo0rkEDxmioR",
+              "name": "Luggage & bags",
+              "color": "greenLight2"
+            },
+            {
+              "id": "sel08vP8E8eTqt70H",
+              "name": "Communications equipment, Telecommunications services",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "selfZX0krXaixSdei",
+              "name": "Nuclear generation",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "sel5TnmVnJBZ7v3kX",
+              "name": "Gas utilities",
+              "color": "redLight2"
+            },
+            {
+              "id": "selbv9ZNGe1XcOWR8",
+              "name": "Wind generation",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "sel2T3bGA9ZsE1gfm",
+              "name": "Homeware",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "selTiAJj5BefX6nww",
+              "name": "Fruit farming",
+              "color": "grayLight2"
+            },
+            {
+              "id": "selHmfPa4ST9Aw6RV",
+              "name": "Other animal farming and processing",
+              "color": "blueLight1"
+            },
+            {
+              "id": "selMq6yj6UDBajrkC",
+              "name": "Palm oil processing",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "sel3B1PzzNlrpoZ2d",
+              "name": "Construction & building materials dealing & distribution",
+              "color": "tealLight1"
+            },
+            {
+              "id": "self7u2Mf593OnEZk",
+              "name": "Tires, Fabricated metal components",
+              "color": "greenLight1"
+            },
+            {
+              "id": "selcO66sUQTLgoAbk",
+              "name": "Toys & games",
+              "color": "yellowLight1"
+            },
+            {
+              "id": "sel9W4yoCtBNrJdOe",
+              "name": "Seafood processing",
+              "color": "orangeLight1"
+            },
+            {
+              "id": "sel3Pw8EiZAqRNkvV",
+              "name": "Automobiles, Paper packaging",
+              "color": "redLight1"
+            },
+            {
+              "id": "sel1dL83z3tcRVN7v",
+              "name": "Transportation equipment wholesale & dealing",
+              "color": "pinkLight1"
+            },
+            {
+              "id": "seljfiHUg30VCP7LQ",
+              "name": "Nitrogenous fertilizers",
+              "color": "purpleLight1"
+            },
+            {
+              "id": "seloQbM6Tc3WZJzr9",
+              "name": "Grain & corn milling",
+              "color": "grayLight1"
+            },
+            {
+              "id": "selBp3c1ddw3lZ838",
+              "name": "Electronic components, Basic plastics",
+              "color": "blueBright"
+            },
+            {
+              "id": "selrzGSpKXRqNDm6z",
+              "name": "Metals supply, wholesale & trading",
+              "color": "cyanBright"
+            },
+            {
+              "id": "selGEPbZOIDsJUL4q",
+              "name": "Wood & paper products wholesale",
+              "color": "tealBright"
+            },
+            {
+              "id": "selOOxDaUJTmgDhcf",
+              "name": "Coffee",
+              "color": "greenBright"
+            },
+            {
+              "id": "selFarDuY3pLamsmg",
+              "name": "Fruit, nut & vegetable processing",
+              "color": "yellowBright"
+            },
+            {
+              "id": "selPNxPsVKieU6PTB",
+              "name": "Logistics - 3rd party, Road freight",
+              "color": "orangeBright"
+            },
+            {
+              "id": "selkFkfeplyLEHXE1",
+              "name": "Copper, Alcoholic beverages",
+              "color": "redBright"
+            },
+            {
+              "id": "selMYtFRuGvQDc1by",
+              "name": "Plastic products, Paper packaging",
+              "color": "pinkBright"
+            },
+            {
+              "id": "selxWvUPnG2Y0uQLr",
+              "name": "Other base chemicals, Automotive interior",
+              "color": "purpleBright"
+            },
+            {
+              "id": "selhpfTfxYt5P9Pm2",
+              "name": "Animal products wholesale",
+              "color": "grayBright"
+            },
+            {
+              "id": "seleJFX4t7IZogdOr",
+              "name": "Vegetable farming",
+              "color": "blueDark1"
+            },
+            {
+              "id": "selDqmKawKpIlcFTq",
+              "name": "Oilseed processing",
+              "color": "cyanDark1"
+            },
+            {
+              "id": "selGnDLffUxMGmaTp",
+              "name": "Paper packaging, Plastic products",
+              "color": "tealDark1"
+            },
+            {
+              "id": "selpii6Ea8918aU8K",
+              "name": "Glass products, Other containers & packaging",
+              "color": "greenDark1"
+            },
+            {
+              "id": "seldcZjX5VYxTvG4X",
+              "name": "Non-chocolate confection",
+              "color": "yellowDark1"
+            },
+            {
+              "id": "selCftQRCPL0TLHIq",
+              "name": "Ceramics",
+              "color": "orangeDark1"
+            },
+            {
+              "id": "selmEQqkA3xl6bk7h",
+              "name": "Fabricated metal components, Nitrogenous fertilizers",
+              "color": "redDark1"
+            },
+            {
+              "id": "selN0VFUQ2ojGNzkT",
+              "name": "Electronic equipment, Fabricated metal components",
+              "color": "pinkDark1"
+            },
+            {
+              "id": "selURUQYBv9HGhjHE",
+              "name": "Fishing",
+              "color": "purpleDark1"
+            },
+            {
+              "id": "selID0qdf60wYDjbY",
+              "name": "Land sales & leasing",
+              "color": "grayDark1"
+            },
+            {
+              "id": "selOHZXCt1pR1cno2",
+              "name": "Other oilseed farming",
+              "color": "blueLight2"
+            },
+            {
+              "id": "selcFEZqSRInGD8JK",
+              "name": "Geothermal generation",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "selRQeDQqZ9oXPyvp",
+              "name": "Logging",
+              "color": "tealLight2"
+            },
+            {
+              "id": "selLVhpkj4JxZRymV",
+              "name": "Paper packaging, Paper products",
+              "color": "greenLight2"
+            },
+            {
+              "id": "sel5su1h3r41RBFPv",
+              "name": "Cruise lines & ferries",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "sel425Cc4lFMBVlTT",
+              "name": "Communications equipment, Other vehicle equipment & systems",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "selajNyKImaAWOcCI",
+              "name": "Apparel design & manufacturing, Automobiles",
+              "color": "redLight2"
+            },
+            {
+              "id": "selsorS7fj3NxFWST",
+              "name": "Electronic components, Plastic products",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "selk0qaHuckaReBKA",
+              "name": "IT services, Specialty chemicals",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "selX0zOnuPzGGamKn",
+              "name": "Cotton farming",
+              "color": "grayLight2"
+            },
+            {
+              "id": "selPlmDqG9PNsXlPw",
+              "name": "Fabricated metal components, Metal containers & packaging",
+              "color": "blueLight1"
+            },
+            {
+              "id": "selKYkrjToq33WJ5U",
+              "name": "Electronic components, Metal containers & packaging",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "selwrqIuVm3ap4eI0",
+              "name": "Non-CCGT generation",
+              "color": "tealLight1"
+            },
+            {
+              "id": "selusN1FPv685y7Tf",
+              "name": "Other food processing, Soybean processing",
+              "color": "greenLight1"
+            }
+          ]
+        },
+        "id": "fldrYoxYD6a6uyoy8",
+        "name": "Primary Activity"
+      },
+      {
+        "type": "singleSelect",
+        "options": {
+          "choices": [
+            {
+              "id": "sellfzkHn3LI3j5ua",
+              "name": "Financial services",
+              "color": "blueLight2"
+            },
+            {
+              "id": "seljabNCzd6iX2Op1",
+              "name": "Chemicals",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "sel3l8sIAn1pYXPLw",
+              "name": "Biotech & pharma",
+              "color": "tealLight2"
+            },
+            {
+              "id": "selrEoXX6OYmJJ5oZ",
+              "name": "IT & software development",
+              "color": "greenLight2"
+            },
+            {
+              "id": "selyjLFUccwRQihCX",
+              "name": "Entertainment facilities",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "selAfijEDNi4wrTIU",
+              "name": "Web & marketing services",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "seliz3Ny4GUIxMPBI",
+              "name": "Metal products manufacturing",
+              "color": "redLight2"
+            },
+            {
+              "id": "sel3ux3ziG1kSLWNq",
+              "name": "Food & beverage processing",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "selRob8DOGW8fz4NC",
+              "name": "Marine transport",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "selzPvREYOOjsIvYG",
+              "name": "Thermal power generation",
+              "color": "grayLight2"
+            },
+            {
+              "id": "selMdjsicO5snHiTL",
+              "name": "Commercial & consumer services",
+              "color": "blueLight1"
+            },
+            {
+              "id": "sel72ZWgKBr90Nw3i",
+              "name": "Energy utility networks",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "selF4ft8ScrpGi9nI",
+              "name": "Electrical & electronic equipment",
+              "color": "tealLight1"
+            },
+            {
+              "id": "selAFCvvViGLfYPlr",
+              "name": "Medical equipment & supplies",
+              "color": "greenLight1"
+            },
+            {
+              "id": "selt8t1QTzlpEPNzk",
+              "name": "Specialized professional services",
+              "color": "yellowLight1"
+            },
+            {
+              "id": "sel2uOUsWXeo6cJ5B",
+              "name": "Land & property ownership & development",
+              "color": "orangeLight1"
+            },
+            {
+              "id": "selfihHPAi7XJI3Ha",
+              "name": "Discretionary retail",
+              "color": "redLight1"
+            },
+            {
+              "id": "sel65B6HrjcdOBOJE",
+              "name": "Cement & concrete",
+              "color": "pinkLight1"
+            },
+            {
+              "id": "selp3UZO20NvgZ98b",
+              "name": "Construction",
+              "color": "purpleLight1"
+            },
+            {
+              "id": "selcblf8By1rdqWaE",
+              "name": "Bars, hotels & restaurants",
+              "color": "grayLight1"
+            },
+            {
+              "id": "selX52MYIcBw4Z5kJ",
+              "name": "Metal smelting, refining & forming",
+              "color": "blueBright"
+            },
+            {
+              "id": "selhJxy56KzDneEnD",
+              "name": "Media, telecommunications & data center services",
+              "color": "cyanBright"
+            },
+            {
+              "id": "selfBptZ2BP1kg7x2",
+              "name": "Trading, wholesale, distribution, rental & leasing",
+              "color": "tealBright"
+            },
+            {
+              "id": "selfDq4pF3eRn8xlF",
+              "name": "Renewable power generation",
+              "color": "greenBright"
+            },
+            {
+              "id": "selZI9khIctoAIb1o",
+              "name": "Industrial support services",
+              "color": "yellowBright"
+            },
+            {
+              "id": "selzcCK2nCKYjqzOt",
+              "name": "Textiles & fabric goods",
+              "color": "orangeBright"
+            },
+            {
+              "id": "selSBxdMMuMZfvjMB",
+              "name": "Plastic product manufacturing",
+              "color": "redBright"
+            },
+            {
+              "id": "selNbQPpcFTheHQgT",
+              "name": "Powered machinery",
+              "color": "pinkBright"
+            },
+            {
+              "id": "sel70tUSXMAipD42g",
+              "name": "Convenience retail",
+              "color": "purpleBright"
+            },
+            {
+              "id": "selAyyAkG2IWJnYQJ",
+              "name": "Renewable energy equipment",
+              "color": "grayBright"
+            },
+            {
+              "id": "selHel9qiNk6lZ3iS",
+              "name": "Transportation equipment",
+              "color": "blueDark1"
+            },
+            {
+              "id": "selqoOiDzQlycclmO",
+              "name": "Other materials",
+              "color": "cyanDark1"
+            },
+            {
+              "id": "selD1wW0qrXtc9jeS",
+              "name": "Other services",
+              "color": "tealDark1"
+            },
+            {
+              "id": "selNGgcq9DWY4K9gw",
+              "name": "Metallic mineral mining",
+              "color": "greenDark1"
+            },
+            {
+              "id": "sel9BE3erJwOy5glU",
+              "name": "Air transport",
+              "color": "yellowDark1"
+            },
+            {
+              "id": "selkgEgwWnU5xS78R",
+              "name": "Light manufacturing",
+              "color": "orangeDark1"
+            },
+            {
+              "id": "sel3Xzb4ReXP40Ped",
+              "name": "Oil & gas extraction & production",
+              "color": "redDark1"
+            },
+            {
+              "id": "selftiRjeVoK1ucNX",
+              "name": "Energy utility networks, Renewable energy equipment",
+              "color": "pinkDark1"
+            },
+            {
+              "id": "selPOxp1mRp0pdxRI",
+              "name": "Print & publishing services",
+              "color": "purpleDark1"
+            },
+            {
+              "id": "selwaxx8omsiOJ7KB",
+              "name": "Oil & gas retailing",
+              "color": "grayDark1"
+            },
+            {
+              "id": "sel3KYfrQapecMEAC",
+              "name": "Oil & gas storage & transportation",
+              "color": "blueLight2"
+            },
+            {
+              "id": "selP7Sl28IBgCJDLw",
+              "name": "Wood & paper materials",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "selBQdQR5ZdF2GLaH",
+              "name": "Tobacco",
+              "color": "tealLight2"
+            },
+            {
+              "id": "selAvIFN9kU3UdECt",
+              "name": "Non-energy utilities",
+              "color": "greenLight2"
+            },
+            {
+              "id": "selSHvxvcu5sYO4x0",
+              "name": "Leisure & home manufacturing",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "sellyjilm2YXzoux7",
+              "name": "Intermodal transport & logistics",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "sel2BPJexVe6buf4a",
+              "name": "Wood & rubber products",
+              "color": "redLight2"
+            },
+            {
+              "id": "selTYpMULWQbN2IXb",
+              "name": "Health care provision",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "sel5qPwrsBtJyYHOf",
+              "name": "Crop farming",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "selg7XAV1FvlQYAe3",
+              "name": "Fish & animal farming",
+              "color": "grayLight2"
+            },
+            {
+              "id": "sel1r2FSGlEGXTbG9",
+              "name": "Paper products & packaging",
+              "color": "blueLight1"
+            },
+            {
+              "id": "sele6QtYtM14zvkYI",
+              "name": "Fish & animal farming, Oil & gas extraction & production",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "selXQiHuYMzvYPa97",
+              "name": "Oil & gas processing",
+              "color": "tealLight1"
+            },
+            {
+              "id": "seloVrM456Uh7n9xr",
+              "name": "Rail transport",
+              "color": "greenLight1"
+            },
+            {
+              "id": "selj4eMthdexjobYO",
+              "name": "Road transport",
+              "color": "yellowLight1"
+            },
+            {
+              "id": "selEXLy57FceJnYS2",
+              "name": "Metal products manufacturing, Light manufacturing",
+              "color": "orangeLight1"
+            },
+            {
+              "id": "selwWMMBmUydiloCI",
+              "name": "Other mineral mining",
+              "color": "redLight1"
+            },
+            {
+              "id": "selzavaHzNWjREH8U",
+              "name": "Coal mining",
+              "color": "pinkLight1"
+            },
+            {
+              "id": "selfsdPIt0AMLYEyp",
+              "name": "Print & publishing services, Paper products & packaging",
+              "color": "purpleLight1"
+            },
+            {
+              "id": "selB0VrMbj3vJzLeH",
+              "name": "Electrical & electronic equipment, Media, telecommunications & data center services",
+              "color": "grayLight1"
+            },
+            {
+              "id": "selixXvIACDxkdwLD",
+              "name": "Nuclear power generation",
+              "color": "blueBright"
+            },
+            {
+              "id": "selTbx7zITxgB8X5A",
+              "name": "Light manufacturing, Metal products manufacturing",
+              "color": "cyanBright"
+            },
+            {
+              "id": "self9hTzBVi6wmYvp",
+              "name": "Transportation equipment, Paper products & packaging",
+              "color": "tealBright"
+            },
+            {
+              "id": "selK04d41ABXJa3xx",
+              "name": "Electrical & electronic equipment, Chemicals",
+              "color": "greenBright"
+            },
+            {
+              "id": "selG0jGovCEJPlz5x",
+              "name": "Intermodal transport & logistics, Road transport",
+              "color": "yellowBright"
+            },
+            {
+              "id": "selngQqFpVi6y8nTq",
+              "name": "Metal smelting, refining & forming, Food & beverage processing",
+              "color": "orangeBright"
+            },
+            {
+              "id": "seldOU7gOkyqR7AB6",
+              "name": "Plastic product manufacturing, Paper products & packaging",
+              "color": "redBright"
+            },
+            {
+              "id": "selWn3P5yNePW0Hin",
+              "name": "Chemicals, Light manufacturing",
+              "color": "pinkBright"
+            },
+            {
+              "id": "selkcA7FqDOdfGaQ6",
+              "name": "Paper products & packaging, Plastic product manufacturing",
+              "color": "purpleBright"
+            },
+            {
+              "id": "sel2xAlEH59thZbOi",
+              "name": "Other materials, Light manufacturing",
+              "color": "grayBright"
+            },
+            {
+              "id": "sel3n0OvoCj7HcuiJ",
+              "name": "Metal products manufacturing, Chemicals",
+              "color": "blueDark1"
+            },
+            {
+              "id": "selouqc8CeUx7LbaN",
+              "name": "Electrical & electronic equipment, Metal products manufacturing",
+              "color": "cyanDark1"
+            },
+            {
+              "id": "selDAMRpeBZlxitqc",
+              "name": "Logging & rubber tapping",
+              "color": "tealDark1"
+            },
+            {
+              "id": "selWK67OjkDSbqLnt",
+              "name": "Electrical & electronic equipment, Powered machinery",
+              "color": "greenDark1"
+            },
+            {
+              "id": "selsllA0rZjcGxb5H",
+              "name": "Textiles & fabric goods, Transportation equipment",
+              "color": "yellowDark1"
+            },
+            {
+              "id": "selb3WHJts9NSGyXV",
+              "name": "Electrical & electronic equipment, Plastic product manufacturing",
+              "color": "orangeDark1"
+            },
+            {
+              "id": "selrwgo3PUCXbZdRa",
+              "name": "IT & software development, Chemicals",
+              "color": "redDark1"
+            }
+          ]
+        },
+        "id": "fldNEGh06OdWePzb7",
+        "name": "Primary Sector"
+      },
+      {
+        "type": "singleSelect",
+        "options": {
+          "choices": [
+            {
+              "id": "seleLdomkd5fqKzge",
+              "name": "Services",
+              "color": "blueLight2"
+            },
+            {
+              "id": "sel3DJ6OuAPIlqb9E",
+              "name": "Materials",
+              "color": "cyanLight2"
+            },
+            {
+              "id": "selsuZ0pM6oyLG6PP",
+              "name": "Biotech, health care & pharma",
+              "color": "tealLight2"
+            },
+            {
+              "id": "selS4XTfzBkgvVq2C",
+              "name": "Hospitality",
+              "color": "greenLight2"
+            },
+            {
+              "id": "selOWkjlrl1UWesvP",
+              "name": "Manufacturing",
+              "color": "yellowLight2"
+            },
+            {
+              "id": "seloqavjY8WmjF9Z4",
+              "name": "Food, beverage & agriculture",
+              "color": "orangeLight2"
+            },
+            {
+              "id": "selvAGcr8Q8RY2TLZ",
+              "name": "Transportation services",
+              "color": "redLight2"
+            },
+            {
+              "id": "seltKeUz2k9NwpBo9",
+              "name": "Power generation",
+              "color": "pinkLight2"
+            },
+            {
+              "id": "selzH01arNneqUrFD",
+              "name": "Infrastructure",
+              "color": "purpleLight2"
+            },
+            {
+              "id": "seljRV56Km8Q9zOQ7",
+              "name": "Retail",
+              "color": "grayLight2"
+            },
+            {
+              "id": "sell2hDeoE9cAL97H",
+              "name": "Apparel",
+              "color": "blueLight1"
+            },
+            {
+              "id": "selANw6iJOBEujn6K",
+              "name": "Fossil Fuels",
+              "color": "cyanLight1"
+            },
+            {
+              "id": "selpS5462FQvhMRXM",
+              "name": "Infrastructure, Manufacturing",
+              "color": "tealLight1"
+            },
+            {
+              "id": "selL7ZEO667MtePln",
+              "name": "Food, beverage & agriculture, Fossil Fuels",
+              "color": "greenLight1"
+            },
+            {
+              "id": "selOHmOfOdk6SGaek",
+              "name": "Services, Manufacturing",
+              "color": "yellowLight1"
+            },
+            {
+              "id": "selAOA3blNpdAyV6n",
+              "name": "Manufacturing, Services",
+              "color": "orangeLight1"
+            },
+            {
+              "id": "selaZTMCaxxQVQ2Z2",
+              "name": "Manufacturing, Materials",
+              "color": "redLight1"
+            },
+            {
+              "id": "seliODl997JQunkRa",
+              "name": "Materials, Food, beverage & agriculture",
+              "color": "pinkLight1"
+            },
+            {
+              "id": "sel1HnvhuTleg90x1",
+              "name": "Materials, Manufacturing",
+              "color": "purpleLight1"
+            },
+            {
+              "id": "selWTYUvZLEh4aani",
+              "name": "Apparel, Manufacturing",
+              "color": "grayLight1"
+            },
+            {
+              "id": "selyTsxG4pqG8ThVh",
+              "name": "Services, Materials",
+              "color": "blueBright"
+            }
+          ]
+        },
+        "id": "fldo9gu56kF5X93XN",
+        "name": "Primary Industry"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldUZFikoCsVGqFyr",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selvZ0xz1PSZe5iXi",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selTDoeyv7LjEyeO6",
+                  "name": "D",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selsOYNUdtN0TYxPY",
+                  "name": "B",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selPhDJNI5Zmb26uI",
+                  "name": "N/A",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selEgFaeby8CwkH6Q",
+                  "name": "A",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selQ3SPTJzHTHH3aP",
+                  "name": "B-",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "sel6sPFN0vpxZLFIB",
+                  "name": "D-",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selvIZJr6NdDxt4KH",
+                  "name": "C-",
+                  "color": "pinkLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldNikJC7bFyxJK35",
+        "name": "Opportunity Disclosure (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "flda5hqgBW0VK0xxk",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "seltONPy4vkyhfytD",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "seloKDBPykhOFpEZq",
+                  "name": "A",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "sel9qgsbV16MYzQnY",
+                  "name": "B-",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selREn6yqfQbkNMNI",
+                  "name": "N/A",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selNdKYb91cRlPAY5",
+                  "name": "B",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selP8msU5YessswbD",
+                  "name": "D-",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "selquj7KfaMeleqf9",
+                  "name": "A-",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selmZdh7wkW3v0PIS",
+                  "name": "D",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "selSTRtFLTSTc5GQ0",
+                  "name": "C-",
+                  "color": "purpleLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fld4r777PwT1zHupY",
+        "name": "Scope 1 & 2 emissions (incl. verification) (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldROJPiL54eMJ9pk",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "seleCZ6eU3A4z2B5q",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selp7pbyZqVhlEoBm",
+                  "name": "A",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "sel2fi0GNx4rwRZ0q",
+                  "name": "B-",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selT29CazZHTBBlAg",
+                  "name": "B",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selnodXRATkIxIluB",
+                  "name": "N/A",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selmRMMRnXHYcacGO",
+                  "name": "D",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "seliPI8ESgc6vJKca",
+                  "name": "A-",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selfsUiWKL5Ah3dJu",
+                  "name": "C-",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "sel2CIJLVu9U11Aam",
+                  "name": "D-",
+                  "color": "purpleLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldofv2YUK6m9TjsM",
+        "name": "Targets (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldKP9w4xrS8VNdIf",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "seliiye7J94HJ1RKK",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selbrsm4T6Rlf1BfH",
+                  "name": "B-",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selX9o5edmJ5Ah5vZ",
+                  "name": "D",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selRz26n0Ck27ZCJc",
+                  "name": "N/A",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selbCevO1RidPL54w",
+                  "name": "B",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selriW9OvOEubxzqO",
+                  "name": "C-",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "sel8na218OU0zuqk2",
+                  "name": "A-",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "sel0te8J7Rhhhkk9M",
+                  "name": "D-",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "selzuef4su6cUe2b1",
+                  "name": "A",
+                  "color": "purpleLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldiuyma244tCSIKa",
+        "name": "Value chain engagement (from CDP Climate score)"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tbl3od0OX5auIbhlB",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fldikxFrCHwCVHGXm"
+        },
+        "id": "fldmQ97uv3I8ULmWw",
+        "name": "SBTI DATA"
+      },
+      {
+        "type": "lastModifiedBy",
+        "id": "fldu9gKEIbzhv82Ow",
+        "name": "Last Modified By"
+      },
+      {
+        "type": "lastModifiedTime",
+        "options": {
+          "isValid": true,
+          "referencedFieldIds": [],
+          "result": {
+            "type": "dateTime",
+            "options": {
+              "dateFormat": {
+                "name": "local",
+                "format": "l"
+              },
+              "timeFormat": {
+                "name": "12hour",
+                "format": "h:mma"
+              },
+              "timeZone": "client"
+            }
+          }
+        },
+        "id": "fldFVhjjWdZkQ3HNs",
+        "name": "Last Modified"
+      },
+      {
+        "type": "singleLineText",
+        "id": "fldY6EVX9mtmQpuXA",
+        "name": "Anonymized Name"
+      },
+      {
+        "type": "multilineText",
+        "id": "fldQfIQBdq2n3mBiB",
+        "name": "Notes"
+      },
+      {
+        "type": "singleCollaborator",
+        "id": "fldsAMX4582TWusUZ",
+        "name": "Assignee"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tbl5Om9wENHAVKQSK",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "flduWfxQ2Ar70mtmu"
+        },
+        "id": "fld3q28veiOVH0f0k",
+        "name": "CDP RESULTS"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tblPwni5NFLXD7wi2",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fld8xjyHXTTjc8QJm"
+        },
+        "id": "fldK8jsaEL4MhMp4h",
+        "name": "Upload CDP chapter 6.5part1"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tblit5mtSXNRRpS9H",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fldcUPvkej169NP7D"
+        },
+        "id": "fldJDbgTvXOA6xXPO",
+        "name": "CDP Climate score"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldtoHxr4LpAk62mH",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "sel9VzX6LAh94VWP1",
+                  "name": "C",
+                  "color": "yellowLight1"
+                },
+                {
+                  "id": "selVCmCTVq4HVfIjd",
+                  "name": "B",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selquZsTuts8PG3Q9",
+                  "name": "B-",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selqLVMVqpmSvvmy7",
+                  "name": "F",
+                  "color": "grayDark1"
+                },
+                {
+                  "id": "seluWIoa0QLvdlar1",
+                  "name": "Not Scored",
+                  "color": "grayBright"
+                },
+                {
+                  "id": "selAIBDgjwEunxxTX",
+                  "name": "D",
+                  "color": "orangeBright"
+                },
+                {
+                  "id": "selsWgelLG1jRsJ15",
+                  "name": "A-",
+                  "color": "greenLight1"
+                },
+                {
+                  "id": "selwqHxtSf70u8CXv",
+                  "name": "Not Available",
+                  "color": "grayLight2"
+                },
+                {
+                  "id": "selZcricdyPvklthN",
+                  "name": "A",
+                  "color": "greenBright"
+                },
+                {
+                  "id": "selbYu6krQH8Xjif7",
+                  "name": "Not Requested",
+                  "color": "grayLight2"
+                },
+                {
+                  "id": "selmKm1RqKXkqECqe",
+                  "name": "D-",
+                  "color": "redDark1"
+                },
+                {
+                  "id": "selsIEbKjYvYHxoXF",
+                  "name": "C-",
+                  "color": "yellowBright"
+                },
+                {
+                  "id": "selxPmuKm2pF6Pi9w",
+                  "name": "See Another",
+                  "color": "tealLight1"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldavUF56KqPOJ6gt",
+        "name": "2023 Overall Score (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldfKDbxlE896B0Z7",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selw2sv4UuH3Ka1Xg",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selnpQ9arNUSvkic6",
+                  "name": "B",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selzBzQOHOIsOhzmM",
+                  "name": "B-",
+                  "color": "tealLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fld5wzRNTOD8rLnnG",
+        "name": "Regional Score Average (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldNjkIKIpVO1sQl1",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selTpLiLDOcojpLpH",
+                  "name": "B",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "sel6U3MKgSUk0LcvQ",
+                  "name": "B-",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selrr6wRF9Ot3STbO",
+                  "name": "C",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selU9P3hQWfav58oY",
+                  "name": "D",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selgatReBD1lSJ1SP",
+                  "name": "A-",
+                  "color": "yellowLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldYRmZ3RdxEZM6Ay",
+        "name": "Sector Score Average (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldzUgw1CQJJkKUuH",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "seldt3HOLr5NvLQgZ",
+                  "name": "D",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selXrMBWQMpdpcUzE",
+                  "name": "B-",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selTZpGrWQcSSKyCL",
+                  "name": "B",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "sellcLnkZUywr5I7s",
+                  "name": "C",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selD3f8AXfSeJQpZD",
+                  "name": "F",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selWRm59LhJoQY2lS",
+                  "name": "A-",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "selroAgSPhTKgTNto",
+                  "name": "N/A",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selEIA3oAKDEBB4mh",
+                  "name": "A",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "selSyOPYxW8sITsb3",
+                  "name": "D-",
+                  "color": "purpleLight2"
+                },
+                {
+                  "id": "seltBCLFUiNkVuxsJ",
+                  "name": "C-",
+                  "color": "grayLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldjL1X2GutiQqAZR",
+        "name": "2022 Score (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldAlEWWwyaossc8X",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "sel1UYLPCDB5jvlcX",
+                  "name": "F",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "sel9UuTblUfdmffgs",
+                  "name": "B",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selVotLQMkhJeoOoV",
+                  "name": "N/A",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selCLEk08SlKtNvIM",
+                  "name": "A-",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selLYEF0xjCEzl2Zb",
+                  "name": "C",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selVyKnIhcqQvJiaR",
+                  "name": "D",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "selUoWhX2n5hs8bzr",
+                  "name": "A",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "sel9cpqeG6TAdyyFO",
+                  "name": "B-",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "sel135erXH2mgOy0P",
+                  "name": "D-",
+                  "color": "purpleLight2"
+                },
+                {
+                  "id": "selIoxECZE0yn9vYK",
+                  "name": "C-",
+                  "color": "grayLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldgmNMpChDQdtrjZ",
+        "name": "2021 Score (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fld6FsFJyfBq6MQr0",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selT6OGjxP0jJxs2N",
+                  "name": "N/A",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selTTNBrYhErskeYe",
+                  "name": "F",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selMGfEkTBtyJ0q1N",
+                  "name": "B",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "sel0oLIeVdwb8eaaK",
+                  "name": "A-",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selCnHAyTFoEGxk8E",
+                  "name": "C",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selKG02xx3ypOepvB",
+                  "name": "B-",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "selVtmSY1ekrUxWlm",
+                  "name": "D-",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selYe7DEMpyVGX6cC",
+                  "name": "C-",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "selIWgaygR9MinUR1",
+                  "name": "D",
+                  "color": "purpleLight2"
+                },
+                {
+                  "id": "sel5jyhmwUH4ZW3EQ",
+                  "name": "A",
+                  "color": "grayLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldiBLI26mJMbW1Kn",
+        "name": "2020 Score (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldoZopNBSwjiQZXj",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selR9DfP2jYAG1869",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selqVOHzMzQ0n5568",
+                  "name": "B",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selkkLStHW5mA2gFn",
+                  "name": "A-",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selBCTRtc4fdfzeTy",
+                  "name": "N/A",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "sel0rSbJNqQhdXTHa",
+                  "name": "B-",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "sel19bBZKqpQw7R1B",
+                  "name": "A",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "selieOqp1JFlgSwKS",
+                  "name": "D",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selGfQArCJrTCbVsu",
+                  "name": "C-",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "selGoY0GaBDDYWr9Q",
+                  "name": "D-",
+                  "color": "purpleLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "flddOnUjL0BYgZDvJ",
+        "name": "Business Strategy, Financial Planning & Scenario Analysis (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fld9atiGB00rTbWdu",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selgCB6lrx1YECrHR",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "selP2pIzhRtv0oTu7",
+                  "name": "A",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selu1ilPMMTL4lPy1",
+                  "name": "B",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selNAib8vApDoyemy",
+                  "name": "N/A",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selWppBpdFbx7BcBs",
+                  "name": "D",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selkQa3Ct63dkPIkn",
+                  "name": "D-",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "sellFy7eL1LjdNfA1",
+                  "name": "A-",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selFtex9xNokjvBiC",
+                  "name": "C-",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "seltIFmiUpVJVzRtV",
+                  "name": "B-",
+                  "color": "purpleLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fldCrOSw1se034Enk",
+        "name": "Emissions reduction initiatives and low carbon products (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldfmrUeiwac77hV4",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selVUHiEpeBgGkOeQ",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "sel6IvZVF9Hirw5ff",
+                  "name": "B",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selGM0OdpVqOeJNFY",
+                  "name": "C-",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "seleeE8c3SDqSR3tq",
+                  "name": "N/A",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selHvfssMQX300GvZ",
+                  "name": "B-",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "selZmQtj23XrcrY5D",
+                  "name": "A-",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "seliP6scALevX9GMG",
+                  "name": "D",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selz9z4UxS4oU3FzI",
+                  "name": "A",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "selqB0l01XAAGKMit",
+                  "name": "D-",
+                  "color": "purpleLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fld3His9Tp4eEjy9S",
+        "name": "Energy (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldJDbgTvXOA6xXPO",
+          "fieldIdInLinkedTable": "fldmkCO8UaMzaZguS",
+          "result": {
+            "type": "singleSelect",
+            "options": {
+              "choices": [
+                {
+                  "id": "selNv4kUbYYmGkLrX",
+                  "name": "C",
+                  "color": "blueLight2"
+                },
+                {
+                  "id": "sel9c0FUnYbLc4sfR",
+                  "name": "D",
+                  "color": "cyanLight2"
+                },
+                {
+                  "id": "selTnL5IDfWs628h2",
+                  "name": "A",
+                  "color": "tealLight2"
+                },
+                {
+                  "id": "selRmRmf8Y80G6uKq",
+                  "name": "B",
+                  "color": "greenLight2"
+                },
+                {
+                  "id": "selhqW7h60EEeRO3i",
+                  "name": "A-",
+                  "color": "yellowLight2"
+                },
+                {
+                  "id": "sellte0y3JSxmliqg",
+                  "name": "N/A",
+                  "color": "orangeLight2"
+                },
+                {
+                  "id": "selCKAgwbXoJ1FPw6",
+                  "name": "D-",
+                  "color": "redLight2"
+                },
+                {
+                  "id": "selYktlpf9yPlGsLn",
+                  "name": "B-",
+                  "color": "pinkLight2"
+                },
+                {
+                  "id": "selA80ot1Wf4Pu8r0",
+                  "name": "C-",
+                  "color": "purpleLight2"
+                }
+              ]
+            }
+          }
+        },
+        "id": "fld25exMwi4GHxhrr",
+        "name": "Governance (from CDP Climate score)"
+      },
+      {
+        "type": "multipleLookupValues",
+        "options": {
+          "isValid": true,
+          "recordLinkFieldId": "fldmQ97uv3I8ULmWw",
+          "fieldIdInLinkedTable": "fldtRXUrybwfdeWNP",
+          "result": {
+            "type": "richText"
+          }
+        },
+        "id": "fld5IDmxXdBYtNJzG",
+        "name": "company_name (from SBTI DATA)"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tblbZU4RZipCprXE2",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fldIT9PPghflJ6cmn"
+        },
+        "id": "fld0i81z5auNRwHPv",
+        "name": "Reporting Framework/Data Aggregator"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tblGyJD4IjvXV5tHI",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fldPJp2QuZHVUSUMY"
+        },
+        "id": "fldlcufQzL2NcLa4B",
+        "name": "Organizational Hierarchy"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tblGyJD4IjvXV5tHI",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fldJwB4kuxhUAlFkl"
+        },
+        "id": "fldvdvJ1rbbYnB5iS",
+        "name": "Organizational Hierarchy 2"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tblLIRnxlCNotH2FY",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fldgHWGaztkbZfIgD"
+        },
+        "id": "fldUyGveDtyWqP9sX",
+        "name": "Division"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tblWqUNyat8ijCvrn",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fldCbqr0umAZGb7T5"
+        },
+        "id": "fldzoc0le2rZHdWzt",
+        "name": "Industry Classification  🏭"
+      },
+      {
+        "type": "createdBy",
+        "id": "fldspLuRdU9cWtj0f",
+        "name": "Created By"
+      },
+      {
+        "type": "createdTime",
+        "options": {
+          "result": {
+            "type": "dateTime",
+            "options": {
+              "dateFormat": {
+                "name": "local",
+                "format": "l"
+              },
+              "timeFormat": {
+                "name": "12hour",
+                "format": "h:mma"
+              },
+              "timeZone": "client"
+            }
+          }
+        },
+        "id": "fldJsxV1c60P2DZ6p",
+        "name": "Created"
+      }
+    ],
+    "views": [
+      {
+        "id": "viwMI2qtv14n51DnQ",
+        "name": "Grid view",
+        "type": "grid"
+      }
+    ]
+  },
+  "division": {
+    "id": "tblLIRnxlCNotH2FY",
+    "name": "Division",
+    "primaryFieldId": "fldze2lOsjghJffyA",
+    "fields": [
+      {
+        "type": "singleLineText",
+        "id": "fldze2lOsjghJffyA",
+        "name": "Name"
+      },
+      {
+        "type": "multipleRecordLinks",
+        "options": {
+          "linkedTableId": "tbl82H6ezrakMSkV1",
+          "isReversed": false,
+          "prefersSingleRecordLink": false,
+          "inverseLinkFieldId": "fldUyGveDtyWqP9sX"
+        },
+        "id": "fldgHWGaztkbZfIgD",
+        "name": "Parent Company"
+      },
+      {
+        "type": "singleLineText",
+        "id": "fldT7Gzi7AYLUiOIW",
+        "name": "Ref."
+      },
+      {
+        "type": "singleSelect",
+        "options": {
+          "choices": [
+            {
+              "id": "selFSuWaOZte8M5Ag",
+              "name": "Active",
+              "color": "greenLight2"
+            },
+            {
+              "id": "selja6weKSYs3RKb7",
+              "name": "Inactive",
+              "color": "grayLight1"
+            }
+          ]
+        },
+        "id": "fldUjhlPcK0C65Q8E",
+        "name": "Status"
+      }
+    ],
+    "views": [
+      {
+        "id": "viwNXUJblN7dI0uRW",
+        "name": "Grid view",
+        "type": "grid"
+      }
+    ]
+  }
+}

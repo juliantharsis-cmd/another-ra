@@ -1,0 +1,38 @@
+# Schema Sync Configuration Example
+# 
+# This file demonstrates how to configure schema synchronization
+# between a source and target data source.
+
+source:
+  kind: airtable
+  baseId: ${AIRTABLE_BASE_ID}
+  table: "Source Table"
+  apiKey: ${AIRTABLE_API_KEY}
+
+target:
+  kind: airtable  # or 'postgres' or 'plan-only'
+  baseId: ${AIRTABLE_RA_BASE_ID}
+  table: "RA Table"
+  apiKey: ${AIRTABLE_API_KEY}
+  
+  # For PostgreSQL target:
+  # kind: postgres
+  # connection: ${PG_DSN}
+  # table: "target_table"
+  # options:
+  #   enumStrategy: "text-check"  # or "pg-enum" or "text"
+  #   timezoneStrategy: "utc"      # or "naive" or "preserve"
+  #   defaultNumberType: "DOUBLE PRECISION"
+
+options:
+  defaultNumberTypeForUnknown: "double"
+  enumStrategy: "text-check"
+  applyComputed: false
+  allowBreaking: false
+  dryRun: true
+  overrides:
+    # Optional per-field overrides by name
+    # fieldName:
+    #   nullable: false
+    #   defaultValue: "default"
+

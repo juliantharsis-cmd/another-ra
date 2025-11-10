@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.env
+*.yml
+!schema.yml.example
+.DS_Store
+coverage/
+

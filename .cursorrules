@@ -1,0 +1,99 @@
+# Cursor Rules for FeatureBuild Framework
+
+When the user includes the keyword `[FeatureBuild]` in their message, automatically transform their request into the structured format defined in `docs/FEATURE_BUILD_FRAMEWORK.md`.
+
+## Transformation Process
+
+1. **Identify the feature** from the user's request
+2. **Determine the role** (default: "senior full-stack engineer")
+3. **Extract goals** and organize into numbered list
+4. **Identify technical requirements** (database, APIs, integrations)
+5. **Add specifications** (schemas, endpoints, configurations)
+6. **Include code examples** where helpful
+7. **Add notes** for constraints/security/limitations
+
+## Format Structure
+
+```
+You are a [ROLE]. Implement a **[FEATURE_NAME]** that [BRIEF_DESCRIPTION], with **[KEY_TECHNICAL_REQUIREMENT]**.
+
+# Goals
+
+1) [Goal 1]
+   - [Sub-requirement]
+
+2) [Goal 2]
+   - [Sub-requirement]
+
+# [Technical Section]
+
+[Specifications]
+
+# [Implementation Section]
+
+[Code examples]
+
+> NOTE: [Constraints/security/limitations]
+```
+
+## Key Principles
+
+- **Be specific**: Use exact field names, types, and examples
+- **Be complete**: Include all technical details needed
+- **Be structured**: Organize hierarchically
+- **Be practical**: Include code examples and scripts
+- **Be aware**: Note constraints and security considerations
+
+## Example
+
+If user says:
+```
+[FeatureBuild] I need a way to track user activity logs
+```
+
+Transform to:
+```
+You are a senior full-stack engineer. Implement an **Activity Logging System** that tracks user actions across the application, with **database-agnostic storage** and **configurable log levels**.
+
+# Goals
+
+1) **Create Activity Log Schema** - Design log entry structure
+   - User ID, timestamp, action type, entity type, entity ID
+   - Optional: IP address, user agent, request metadata
+   - Support for different log levels (info, warning, error)
+
+2) **Build Logging Service** - Implement service layer
+   - `log(userId, action, entity, metadata?)`
+   - `getLogs(userId?, filters?, pagination?)`
+   - Async logging to prevent blocking
+
+3) **Add API Endpoints** - RESTful API for logs
+   - `GET /api/activity-logs` - Query logs
+   - `POST /api/activity-logs` - Create log entry (internal)
+   - Support filtering by user, action, date range
+
+# Database Schema
+
+Table: **Activity Logs**
+- id (UUID, primary key)
+- user_id (string, indexed)
+- action (string, indexed)
+- entity_type (string)
+- entity_id (string)
+- metadata (JSON)
+- ip_address (string, optional)
+- created_at (timestamp, indexed)
+
+# Implementation
+
+Service interface:
+```typescript
+interface ActivityLogService {
+  log(userId: string, action: string, entity: { type: string, id: string }, metadata?: object): Promise<void>
+  getLogs(filters: LogFilters, pagination: Pagination): Promise<LogResult>
+}
+```
+
+> NOTE: Ensure PII is handled according to GDPR. Logs should be retained for configurable period (default: 90 days).
+```
+
