@@ -68,11 +68,6 @@ export class UserTableAirtableService {
                           'Application List' // Use "Application List" as the actual table name
     // Organization Scope table doesn't exist - removed from resolution
     
-    // Log table identifiers for debugging
-    console.log(`📋 Linked record table identifiers:`)
-    console.log(`   User Roles: ${this.userRolesTableId}`)
-    console.log(`   Modules (Application List): ${this.modulesTableId}`)
-    console.log(`   Organization Scope: REMOVED (table doesn't exist)`)
     
     // Set cache file path
     this.cacheFilePath = path.join(__dirname, '../../.cache', 'ghg-type-total-count.json')
@@ -146,7 +141,6 @@ export class UserTableAirtableService {
    * Dynamically captures ALL fields from Airtable
    */
   mapAirtableToUserTable(record: Airtable.Record<any>): any {
-    console.log(`\n🔍 [mapAirtableToUserTable] Starting mapping for record ${record.id}`)
     const fields = record.fields
     
     // Start with all fields from Airtable (dynamic mapping)
@@ -164,88 +158,43 @@ export class UserTableAirtableService {
     ]
     
     // Known attachment field names (case-insensitive matching)
-    // Primary field name: "Attachment" (matches Airtable field name)
     const attachmentFieldNames = [
-      'Attachment', 'attachment', 'Attachments', 'attachments', // Primary - matches Airtable
+      'Attachment', 'attachment', 'Attachments', 'attachments',
       'Profile Picture', 'profile picture', 'ProfilePicture', 'profilePicture',
       'Photo', 'photo', 'Picture', 'picture',
       'Image', 'image', 'Images', 'images',
       'Avatar', 'avatar', 'Profile Photo', 'profile photo'
     ]
     
-    // Copy all non-system fields from Airtable
-    // First, log all fields to help debug attachment field mapping
-    console.log(`📋 All Airtable fields for record ${record.id}:`, Object.keys(fields))
-    
     Object.keys(fields).forEach(fieldName => {
       if (!systemFields.some(sf => fieldName.toLowerCase() === sf.toLowerCase())) {
         const value = fields[fieldName]
-        
-        // Check if this is an attachment field
         const isAttachmentField = attachmentFieldNames.some(attName => 
           fieldName.toLowerCase() === attName.toLowerCase()
         )
         
-        // Log attachment field detection
-        if (isAttachmentField || (Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === 'object' && (value[0].url || value[0].id))) {
-          console.log(`📎 Detected potential attachment field: "${fieldName}"`, {
-            isAttachmentField,
-            valueType: typeof value,
-            isArray: Array.isArray(value),
-            arrayLength: Array.isArray(value) ? value.length : 0,
-            firstItem: Array.isArray(value) && value.length > 0 ? value[0] : null
-          })
-        }
-        
-        // Handle "Profile Name" field FIRST - must be text only, map directly to Airtable "Profile Name" field
+        // Handle "Profile Name" field - must be text only
         if (fieldName === 'Profile Name' || fieldName === 'profile name' || fieldName === 'profileName') {
-          console.log(`📝 Mapping "Profile Name" field from Airtable:`, {
-            fieldName,
-            valueType: typeof value,
-            isArray: Array.isArray(value),
-            value: value
-          })
-          // CRITICAL: Profile Name must be a text string, never an attachment filename
-          // Map directly to Airtable "Profile Name" field (text field)
-          if (Array.isArray(value)) {
-            // This is wrong - Profile Name should not be an array/attachment
-            console.warn(`⚠️ Profile Name field contains array/attachment data - ignoring. Field should be text only.`)
-            result['Profile Name'] = '' // Map to exact Airtable field name
-          } else if (value && typeof value === 'object' && (value.filename || value.url || value.name)) {
-            // Value is an attachment object - this is wrong for Profile Name
-            console.warn(`⚠️ Profile Name field contains attachment object (filename: ${value.filename || value.name}) - ignoring. Field should be text only.`)
-            result['Profile Name'] = '' // Map to exact Airtable field name
+          if (Array.isArray(value) || (value && typeof value === 'object' && (value.filename || value.url || value.name))) {
+            // Invalid data - treat as empty
+            result['Profile Name'] = ''
           } else if (typeof value === 'string' && (value.endsWith('.png') || value.endsWith('.jpg') || value.endsWith('.jpeg') || value.endsWith('.gif') || value.endsWith('.pdf'))) {
-            // Value looks like a filename - this might be incorrectly mapped attachment data
-            console.warn(`⚠️ Profile Name field contains what looks like a filename (${value}) - this might be incorrectly mapped attachment data. Setting to empty.`)
-            result['Profile Name'] = '' // Map to exact Airtable field name
+            // Looks like filename - treat as empty
+            result['Profile Name'] = ''
           } else {
-            // Normal text field - convert to string and map to exact Airtable field name
             result['Profile Name'] = value != null ? String(value) : ''
           }
         }
-        // Handle attachment fields - preserve full attachment objects, map to exact Airtable field name
-        // CRITICAL: Map "Attachment" field to Airtable "Attachment" field
-        // Also detect attachment arrays even if field name doesn't match our list
+        // Handle attachment fields
         else if (isAttachmentField || (Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === 'object' && (value[0].url || value[0].id || value[0].filename))) {
-          // Airtable attachment fields are arrays of attachment objects
-          // Each object has: id, url, filename, size, type, thumbnails
-          // Map to exact Airtable field name (preserve original field name from Airtable)
-          // If field name is "Attachment" or "Attachments", map to "Attachment"
           const attachmentFieldName = (fieldName === 'Attachment' || fieldName === 'attachment' || fieldName === 'Attachments' || fieldName === 'attachments') 
             ? 'Attachment' 
             : fieldName
           
-          console.log(`📎 Processing attachment field "${fieldName}" -> "${attachmentFieldName}"`, {
-            valueLength: Array.isArray(value) ? value.length : 0,
-            firstAttachment: Array.isArray(value) && value.length > 0 ? value[0] : null
-          })
-          
           if (Array.isArray(value) && value.length > 0) {
             result[attachmentFieldName] = value.map((att: any) => {
-              // Preserve full attachment object if it exists
               if (att && typeof att === 'object') {
-                const attachmentObj = {
+                return {
                   id: att.id,
                   url: att.url,
                   filename: att.filename || att.name || 'attachment',
@@ -253,19 +202,14 @@ export class UserTableAirtableService {
                   type: att.type,
                   thumbnails: att.thumbnails
                 }
-                console.log(`  ✅ Mapped attachment:`, attachmentObj)
-                return attachmentObj
               }
               return att
             })
-            console.log(`  ✅ Final Attachment field value:`, result[attachmentFieldName])
           } else {
             result[attachmentFieldName] = value || []
-            console.log(`  ⚠️ Attachment field is empty or invalid`)
           }
         }
         // Handle linked records - extract IDs
-        // CRITICAL: Only treat as linked record if it has id but NOT url/filename (attachment objects have both)
         else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0].id && !value[0].url && !value[0].filename) {
           result[fieldName] = value.map((item: any) => item.id || item)
         }
@@ -282,16 +226,6 @@ export class UserTableAirtableService {
     result.createdBy = this.getCreatedBy(fields)
     result.lastModifiedBy = this.getLastModifiedBy(fields)
     
-    // Log final result to verify Attachment field is present
-    if (result['Attachment'] || result['attachment']) {
-      console.log(`✅ Final mapped record ${record.id} has Attachment field:`, {
-        attachmentField: result['Attachment'] || result['attachment'],
-        allKeys: Object.keys(result)
-      })
-    } else {
-      console.log(`⚠️ Final mapped record ${record.id} does NOT have Attachment field. Available fields:`, Object.keys(result))
-    }
-    
     return result
   }
 
@@ -301,10 +235,7 @@ export class UserTableAirtableService {
    * Note: Organization Scope removed - table doesn't exist
    */
   private async resolveLinkedRecordNames(userTableRecords: any[]): Promise<void> {
-    console.log(`\n🔍 [resolveLinkedRecordNames] Starting resolution for ${userTableRecords.length} record(s)`)
-    
     if (!this.relationshipResolver || userTableRecords.length === 0) {
-      console.log(`⚠️ [resolveLinkedRecordNames] Skipping - no resolver or empty records`)
       return
     }
 
@@ -313,15 +244,8 @@ export class UserTableAirtableService {
       const companyIds = new Set<string>()
       const userRoleIds = new Set<string>()
       const moduleIds = new Set<string>()
-      // Organization Scope removed - table doesn't exist
 
       userTableRecords.forEach(record => {
-        console.log(`  📋 Processing record ${record.id}:`, {
-          Company: record.Company,
-          'User Roles': record['User Roles'],
-          Modules: record.Modules
-          // Organization Scope removed - table doesn't exist
-        })
         // Collect Company IDs
         if (record.Company) {
           const ids = Array.isArray(record.Company) ? record.Company : [record.Company]
@@ -332,7 +256,6 @@ export class UserTableAirtableService {
           const ids = Array.isArray(record['User Roles']) ? record['User Roles'] : [record['User Roles']]
           ids.forEach((id: string) => id && userRoleIds.add(id))
         }
-        // Organization Scope removed - table doesn't exist
         // Collect Modules IDs (maps to "Application List" table)
         if (record.Modules) {
           const ids = Array.isArray(record.Modules) ? record.Modules : [record.Modules]
@@ -341,30 +264,14 @@ export class UserTableAirtableService {
       })
 
       // Resolve all relationships in parallel
-      // Use direct access for all tables (bypasses permission issues with RelationshipResolver)
-      // Organization Scope removed - table doesn't exist
       const [companyNames, userRoleNames, moduleNames] = await Promise.all([
         companyIds.size > 0 ? this.resolveCompanyNamesDirectly(Array.from(companyIds)) : Promise.resolve([]),
         userRoleIds.size > 0 ? this.resolveLinkedRecordsDirectly(Array.from(userRoleIds), this.userRolesTableId || 'User Roles', 'Name') : Promise.resolve([]),
         moduleIds.size > 0 ? this.resolveLinkedRecordsDirectly(Array.from(moduleIds), this.modulesTableId || 'Application List', 'Name') : Promise.resolve([]),
       ])
       
-      // Debug logging
-      console.log(`\n📊 [resolveLinkedRecordNames] Collected IDs:`, {
-        companyIds: companyIds.size,
-        userRoleIds: userRoleIds.size,
-        moduleIds: moduleIds.size
-        // Organization Scope removed
-      })
-      
-      if (companyIds.size > 0) {
-        console.log(`✅ Resolved ${companyNames.length} company names from ${companyIds.size} company IDs`)
-        if (companyNames.length > 0) {
-          console.log(`   Company names:`, companyNames.map(r => `${r.id} -> ${r.name}`).join(', '))
-        }
-        if (companyNames.length === 0) {
-          console.warn('⚠️  No company names resolved! Check Companies table access and field names.')
-        }
+      if (companyIds.size > 0 && companyNames.length === 0) {
+        console.warn('⚠️  No company names resolved! Check Companies table access and field names.')
       }
 
       // Create lookup maps
@@ -510,38 +417,12 @@ export class UserTableAirtableService {
                      tableIdOrName
 
     try {
-      console.log(`🔍 [resolveLinkedRecordsDirectly] Resolving ${recordIds.length} ${tableType} IDs using table: "${tableIdOrName}"`)
-      
-      // First, try a simple test query to verify table access (helps diagnose issues)
-      try {
-        await this.base(tableIdOrName)
-          .select({
-            maxRecords: 1,
-            fields: [displayField],
-          })
-          .firstPage()
-        console.log(`✅ [resolveLinkedRecordsDirectly] Table "${tableIdOrName}" is accessible`)
-      } catch (testError: any) {
-        // If test query fails, provide detailed diagnostics
-        if (testError.error === 'NOT_FOUND' || testError.statusCode === 404) {
-          console.error(`❌ Table "${tableIdOrName}" not found. Possible issues:`)
-          console.error(`   - Table name might be incorrect (check spelling, case, spaces)`)
-          console.error(`   - Table might be in a different base`)
-          console.error(`   - Table might not exist yet`)
-        } else if (testError.error === 'NOT_AUTHORIZED' || testError.statusCode === 403) {
-          console.error(`❌ No permission to access table "${tableIdOrName}"`)
-          console.error(`   - Check API token permissions in Airtable`)
-          console.error(`   - Verify the table exists and is accessible`)
-        }
-        throw testError // Re-throw to be handled by outer catch
-      }
-      
-      // Fetch records by ID using the table ID or name (same approach as AirtableService)
+      // Fetch records by ID
       const records = await this.base(tableIdOrName)
         .select({
           filterByFormula: `OR(${recordIds.map(id => `RECORD_ID() = "${id}"`).join(', ')})`,
-          fields: [displayField], // Only fetch the display field
-          maxRecords: 100, // Limit to prevent large queries
+          fields: [displayField],
+          maxRecords: 100,
         })
         .all()
 
@@ -553,9 +434,6 @@ export class UserTableAirtableService {
           name,
         }
       })
-
-      console.log(`✅ [resolveLinkedRecordsDirectly] Resolved ${resolved.length} ${tableType} names:`, 
-        resolved.map(r => `${r.id} -> ${r.name}`).join(', '))
 
       return resolved
     } catch (error: any) {
@@ -750,8 +628,6 @@ export class UserTableAirtableService {
       }
     })
     
-    console.log(`📝 Mapped fields for Airtable:`, Object.keys(fields).join(', '))
-    console.log(`   Linked record fields:`, linkedRecordFields.filter(f => fields[f] !== undefined).map(f => `${f}=${JSON.stringify(fields[f])}`).join(', '))
     
     return fields
   }
@@ -822,12 +698,22 @@ export class UserTableAirtableService {
     search?: string
   ): Promise<{ records: any[], total: number }> {
     try {
-      console.log(`📥 Fetching paginated user table: offset=${offset}, limit=${limit}`)
-      
       const startRecordIndex = offset
       const endRecordIndex = offset + limit
-      const startPage = Math.floor(startRecordIndex / 100) + 1
-      const endPage = Math.ceil(endRecordIndex / 100)
+      
+      // If we have linked record filters, we need to fetch more records to filter in memory
+      // Calculate how many pages we need to fetch
+      const hasLinkedRecordFilters = filters && Object.keys(filters).some(key => 
+        (key === 'Company' || key === 'User Roles' || key === 'Modules') && filters[key]
+      )
+      
+      // For linked record filters, fetch more records to ensure we have enough after filtering
+      const fetchMultiplier = hasLinkedRecordFilters ? 5 : 1 // Fetch 5x more if filtering in memory
+      const recordsToFetch = Math.max(limit * fetchMultiplier, 500) // At least 500 records
+      const pagesToFetch = Math.ceil(recordsToFetch / 100)
+      
+      const startPage = 1
+      const endPage = pagesToFetch
       
       let allRecords: Airtable.Record<any>[] = []
       let currentPage = 0
@@ -836,21 +722,98 @@ export class UserTableAirtableService {
       const sortField = sortBy && sortBy.trim() !== '' ? this.mapFieldNameToAirtable(sortBy) : null
       const sortDirection = sortOrder === 'desc' ? 'desc' : 'asc'
       
-      if (sortField) {
-        console.log(`   Sorting by: ${sortBy} -> ${sortField} (${sortDirection})`)
-      } else {
-        console.log(`   No sort field specified - using Airtable default order`)
-      }
-      
-      // Build Airtable filter formula
-      const filterFormulas: string[] = []
+      // Separate linked record filters from regular filters
+      // Linked records will be filtered in memory (more reliable than ARRAYJOIN formula)
+      const linkedRecordFilters: Record<string, string[]> = {}
+      const regularFilters: Record<string, any> = {}
       
       if (filters) {
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value) {
-            const airtableFieldName = this.mapFieldNameToAirtable(key)
-            const escapedValue = String(value).replace(/'/g, "''")
-            filterFormulas.push(`{${airtableFieldName}} = '${escapedValue}'`)
+        console.log(`🔍 Processing filters:`, JSON.stringify(filters, null, 2))
+        // First, validate linked record filter values against available options
+        // This prevents fetching records for companies/user roles/modules that have no users
+        for (const [key, value] of Object.entries(filters)) {
+          if (value && (key === 'Company' || key === 'User Roles' || key === 'Modules')) {
+            const values = Array.isArray(value) ? value : [value]
+            const validValues = values.filter(v => v && String(v).trim() !== '')
+            
+            if (validValues.length > 0) {
+              // Validate that these filter values are actually used in the user table
+              // Use cached values if available for faster validation
+              const cacheKey = `linked_${key}_10000`
+              let availableFilterValues: string[] = []
+              
+              // Check cache first
+              const cached = this.distinctValuesCache.get(cacheKey)
+              if (cached && Date.now() - cached.timestamp < this.DISTINCT_VALUES_CACHE_TTL) {
+                availableFilterValues = cached.values as string[]
+                console.log(`   Using cached filter values for validation (${availableFilterValues.length} values)`)
+              } else {
+                // Fetch if not cached (will be cached for future requests)
+                availableFilterValues = await this.getLinkedRecordFilterValues(
+                  key as 'Company' | 'User Roles' | 'Modules',
+                  10000 // Get all available values for validation
+                )
+              }
+              
+              // Extract just the IDs from "Name|ID" format
+              const availableIds = new Set(
+                availableFilterValues.map(v => v.includes('|') ? v.split('|')[1] : v)
+              )
+              
+              // Filter to only include values that are actually available
+              const validatedValues = validValues.filter(v => availableIds.has(String(v)))
+              
+              if (validatedValues.length === 0) {
+                // None of the selected values are in the user table - return empty immediately
+                console.log(`⚠️  Filter ${key} = ${validValues.join(', ')} has no matching records in user table. Returning empty results.`)
+                return {
+                  records: [],
+                  total: 0,
+                }
+              }
+              
+              if (validatedValues.length < validValues.length) {
+                console.log(`⚠️  Some filter values for ${key} are not in user table. Using only validated values: ${validatedValues.join(', ')}`)
+              }
+              
+              linkedRecordFilters[key] = validatedValues
+              console.log(`🔍 Linked record filter (in-memory): ${key} = ${validatedValues.join(', ')}`)
+            }
+          } else if (value) {
+            // Regular field filter (e.g., Status) - use Airtable formula
+            regularFilters[key] = value
+          }
+        }
+      }
+      
+      // Build Airtable filter formula for regular filters only
+      const filterFormulas: string[] = []
+      
+      if (Object.keys(regularFilters).length > 0) {
+        Object.entries(regularFilters).forEach(([key, value]) => {
+          const airtableFieldName = this.mapFieldNameToAirtable(key)
+          
+          // Support both single value and array of values (multi-select)
+          const values = Array.isArray(value) ? value : [value]
+          const validValues = values.filter(v => v && String(v).trim() !== '')
+          
+          if (validValues.length > 0) {
+            if (validValues.length === 1) {
+              // Single value: simple equality
+              const escapedValue = String(validValues[0]).replace(/'/g, "''")
+              const formula = `{${airtableFieldName}} = '${escapedValue}'`
+              filterFormulas.push(formula)
+              console.log(`🔍 Filter: ${key} = ${validValues[0]} -> ${formula}`)
+            } else {
+              // Multiple values: use OR() with multiple equality checks
+              const equalityChecks = validValues.map(v => {
+                const escapedValue = String(v).replace(/'/g, "''")
+                return `{${airtableFieldName}} = '${escapedValue}'`
+              })
+              const formula = `OR(${equalityChecks.join(', ')})`
+              filterFormulas.push(formula)
+              console.log(`🔍 Filter: ${key} = ${validValues.join(', ')} -> ${formula}`)
+            }
           }
         })
       }
@@ -872,10 +835,6 @@ export class UserTableAirtableService {
       
       const filterFormula = filterFormulas.length > 0 ? `AND(${filterFormulas.join(', ')})` : undefined
       
-      if (filterFormula) {
-        console.log(`   Applying filter formula: ${filterFormula}`)
-      }
-      
       // Fetch only the pages we need
       await new Promise<void>((resolve, reject) => {
         const selectOptions: any = {
@@ -889,7 +848,13 @@ export class UserTableAirtableService {
         
         if (filterFormula) {
           selectOptions.filterByFormula = filterFormula
+          console.log(`📋 Applying filter formula: ${filterFormula}`)
         }
+        
+        // Add timeout to prevent infinite loading (30 seconds)
+        const timeout = setTimeout(() => {
+          reject(new Error('Filter query timed out after 30 seconds. The filter may be too complex or the field may not exist in Airtable.'))
+        }, 30000)
         
         this.base(this.tableName)
           .select(selectOptions)
@@ -897,14 +862,11 @@ export class UserTableAirtableService {
             (records, fetchNextPage) => {
               currentPage++
               
-              if (currentPage < startPage) {
-                fetchNextPage()
-                return
-              }
-              
+              // Always collect records (we'll filter in memory if needed)
               allRecords.push(...records)
               
               if (currentPage >= endPage) {
+                clearTimeout(timeout)
                 resolve()
                 return
               }
@@ -912,8 +874,17 @@ export class UserTableAirtableService {
               fetchNextPage()
             },
             (err) => {
+              clearTimeout(timeout)
               if (err) {
-                reject(err)
+                console.error(`❌ Error fetching filtered records:`, err)
+                // Provide more helpful error messages
+                if (err.error === 'INVALID_VALUE_FOR_COLUMN') {
+                  reject(new Error(`Invalid filter: The field may not exist or may have a different name in Airtable. Formula: ${filterFormula}`))
+                } else if (err.error === 'INVALID_FORMULA') {
+                  reject(new Error(`Invalid filter formula: ${filterFormula}`))
+                } else {
+                  reject(err)
+                }
               } else {
                 resolve()
               }
@@ -921,17 +892,64 @@ export class UserTableAirtableService {
           )
       })
       
-      const startIndexInFetched = startRecordIndex % 100
-      const endIndexInFetched = startIndexInFetched + limit
-      const paginatedRecords = allRecords.slice(startIndexInFetched, endIndexInFetched)
+      // Apply in-memory filtering for linked records
+      let filteredRecords = allRecords
       
-      console.log(`✅ Fetched ${paginatedRecords.length} records from pages ${startPage}-${endPage}`)
+      if (Object.keys(linkedRecordFilters).length > 0) {
+        console.log(`🔍 Applying in-memory filters for linked records:`, JSON.stringify(linkedRecordFilters, null, 2))
+        console.log(`   Starting with ${allRecords.length} records`)
+        filteredRecords = allRecords.filter(record => {
+          // Map record first to get the field values
+          const mapped = this.mapAirtableToUserTable(record)
+          
+          // Check each linked record filter
+          for (const [fieldKey, filterValues] of Object.entries(linkedRecordFilters)) {
+            const fieldValue = mapped[fieldKey]
+            
+            if (!fieldValue) {
+              return false // Field is empty, doesn't match
+            }
+            
+            // Get record IDs from the field (could be array or single value)
+            const recordIds = Array.isArray(fieldValue) ? fieldValue : [fieldValue]
+            
+            // Check if any of the filter values match any of the record IDs
+            const matches = filterValues.some(filterId => 
+              recordIds.some(recordId => String(recordId) === String(filterId))
+            )
+            
+            if (!matches) {
+              return false // This record doesn't match this filter
+            }
+          }
+          
+          return true // Record matches all linked record filters
+        })
+        
+        console.log(`   Filtered from ${allRecords.length} to ${filteredRecords.length} records using in-memory filters`)
+      }
+      
+      const startIndexInFetched = 0 // Start from beginning of filtered records
+      const endIndexInFetched = startIndexInFetched + limit
+      const paginatedRecords = filteredRecords.slice(startIndexInFetched, endIndexInFetched)
+      
+      console.log(`✅ Fetched ${paginatedRecords.length} records (from ${filteredRecords.length} filtered, ${allRecords.length} total)`)
       
       // Get total count
       let total: number
-      if (filterFormula) {
-        total = await this.getFilteredCount(filterFormula)
-        console.log(`   Filtered total count: ${total}`)
+      if (filterFormula || Object.keys(linkedRecordFilters).length > 0) {
+        // If we have linked record filters, use the filtered count
+        if (Object.keys(linkedRecordFilters).length > 0) {
+          total = filteredRecords.length
+          // If we fetched all records, this is accurate. Otherwise, it's an estimate
+          if (filteredRecords.length < allRecords.length) {
+            console.log(`   ⚠️  Using estimated count (${total}) - may need to fetch more records for accurate count`)
+          }
+        } else {
+          // Only regular filters - use Airtable count
+          total = await this.getFilteredCount(filterFormula!)
+          console.log(`   Filtered total count: ${total}`)
+        }
       } else {
         total = await this.getTotalCount(true)
       }
@@ -963,17 +981,10 @@ export class UserTableAirtableService {
    */
   async findById(id: string): Promise<any | null> {
     try {
-      console.log(`\n🔍 [findById] Fetching record ${id} from table "${this.tableName}"`)
       const record = await this.base(this.tableName).find(id)
-      console.log(`✅ [findById] Record fetched, calling mapAirtableToUserTable`)
       const mapped = this.mapAirtableToUserTable(record)
-      console.log(`📋 [findById] Mapped record has Company:`, mapped.Company)
-      console.log(`📋 [findById] Mapped record has CompanyName (before resolution):`, mapped.CompanyName)
       // Resolve linked record names
-      console.log(`🔄 [findById] Calling resolveLinkedRecordNames...`)
       await this.resolveLinkedRecordNames([mapped])
-      console.log(`✅ [findById] After resolution - CompanyName:`, mapped.CompanyName)
-      console.log(`📋 [findById] Final record keys:`, Object.keys(mapped))
       return mapped
     } catch (error: any) {
       if (error.statusCode === 404 || error.error === 'NOT_FOUND') {
@@ -988,12 +999,8 @@ export class UserTableAirtableService {
    */
   async create(fields: Record<string, any>): Promise<any> {
     try {
-      console.log(`📝 Creating user table in Airtable`)
       const airtableFields = this.mapUserTableToAirtable(fields)
-      console.log(`   Mapped Airtable fields:`, JSON.stringify(airtableFields, null, 2))
-      
       const record = await this.base(this.tableName).create(airtableFields)
-      console.log(`✅ Successfully created user table in Airtable: ${record.id}`)
       
       this.clearCountCache()
       this.clearDistinctValuesCache()
@@ -1013,11 +1020,8 @@ export class UserTableAirtableService {
    */
   async update(id: string, fields: Record<string, any>): Promise<any> {
     try {
-      console.log(`📝 Updating user table in Airtable: ${id}`)
       const airtableFields = this.mapUserTableToAirtable(fields)
-      
       const record = await this.base(this.tableName).update(id, airtableFields)
-      console.log(`✅ Successfully updated user table: ${id}`)
       
       const mapped = this.mapAirtableToUserTable(record)
       // Resolve linked record names
@@ -1158,6 +1162,120 @@ export class UserTableAirtableService {
     } catch (error: any) {
       console.error('Error getting filtered count for user table:', error)
       return 0
+    }
+  }
+
+  /**
+   * Get unique linked record filter values from user table
+   * Returns only companies/user roles/modules that are actually used in the user table
+   * Format: "Name|ID" for easy filtering
+   */
+  async getLinkedRecordFilterValues(fieldName: 'Company' | 'User Roles' | 'Modules', limit: number = 1000): Promise<string[]> {
+    try {
+      const cacheKey = `linked_${fieldName}_${limit}`
+      const cached = this.distinctValuesCache.get(cacheKey)
+      if (cached && Date.now() - cached.timestamp < this.DISTINCT_VALUES_CACHE_TTL) {
+        console.log(`📊 Using cached linked record filter values for ${fieldName}: ${cached.values.length} values`)
+        return cached.values as string[]
+      }
+      
+      console.log(`📊 Fetching linked record filter values for ${fieldName} from user table`)
+      
+      const airtableFieldName = this.mapFieldNameToAirtable(fieldName)
+      const uniqueRecordIds = new Set<string>()
+      let pageCount = 0
+      const maxPagesToScan = 100 // Scan up to 10,000 records
+      
+      // Step 1: Collect unique record IDs from user table
+      await new Promise<void>((resolve, reject) => {
+        this.base(this.tableName)
+          .select({
+            fields: [airtableFieldName],
+            pageSize: 100,
+            maxRecords: maxPagesToScan * 100,
+          })
+          .eachPage(
+            (records, fetchNextPage) => {
+              pageCount++
+              
+              records.forEach(record => {
+                const value = record.fields[airtableFieldName]
+                if (value === null || value === undefined) {
+                  return
+                }
+                
+                // Linked records are arrays of record IDs
+                if (Array.isArray(value)) {
+                  value.forEach((id: string) => {
+                    if (id && typeof id === 'string' && id.startsWith('rec')) {
+                      uniqueRecordIds.add(id)
+                    }
+                  })
+                } else if (typeof value === 'string' && value.startsWith('rec')) {
+                  uniqueRecordIds.add(value)
+                }
+              })
+              
+              if (pageCount >= maxPagesToScan || uniqueRecordIds.size >= limit) {
+                resolve()
+                return
+              }
+              
+              fetchNextPage()
+            },
+            (err) => {
+              if (err) reject(err)
+              else resolve()
+            }
+          )
+      })
+      
+      console.log(`   Found ${uniqueRecordIds.size} unique ${fieldName} record IDs in user table`)
+      
+      if (uniqueRecordIds.size === 0) {
+        return []
+      }
+      
+      // Step 2: Resolve record IDs to names
+      let resolvedRecords: Array<{ id: string; name: string }> = []
+      
+      if (fieldName === 'Company') {
+        resolvedRecords = await this.resolveCompanyNamesDirectly(Array.from(uniqueRecordIds))
+      } else if (fieldName === 'User Roles') {
+        resolvedRecords = await this.resolveLinkedRecordsDirectly(
+          Array.from(uniqueRecordIds),
+          this.userRolesTableId || 'User Roles',
+          'Name'
+        )
+      } else if (fieldName === 'Modules') {
+        resolvedRecords = await this.resolveLinkedRecordsDirectly(
+          Array.from(uniqueRecordIds),
+          this.modulesTableId || 'Application List',
+          'Name'
+        )
+      }
+      
+      // Step 3: Format as "Name|ID" for filter options
+      const filterValues = resolvedRecords
+        .filter(r => r.name && !r.name.startsWith('rec')) // Only include successfully resolved names
+        .map(r => `${r.name}|${r.id}`)
+        .sort() // Sort alphabetically by name
+      
+      // Limit results
+      const limitedValues = filterValues.slice(0, limit)
+      
+      console.log(`✅ Found ${limitedValues.length} filterable ${fieldName} values from user table`)
+      
+      // Cache the results
+      this.distinctValuesCache.set(cacheKey, {
+        values: limitedValues,
+        timestamp: Date.now(),
+      })
+      
+      return limitedValues
+    } catch (error: any) {
+      console.error(`❌ Error getting linked record filter values for ${fieldName}:`, error)
+      return []
     }
   }
 

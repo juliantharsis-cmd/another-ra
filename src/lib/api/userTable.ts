@@ -24,8 +24,9 @@ export interface PaginationParams {
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
   search?: string
-  status?: string
-  category?: string
+  filters?: Record<string, any> // All filters as key-value pairs
+  status?: string // Legacy support
+  category?: string // Legacy support
 }
 
 export interface UserTable {
@@ -113,6 +114,26 @@ class UserTableApiClient {
         if (params.search) {
           queryParams.append('search', params.search)
         }
+        
+        // Add all filters from params.filters object
+        if (params.filters) {
+          Object.entries(params.filters).forEach(([key, value]) => {
+            if (value) {
+              // Handle arrays by appending each value separately
+              if (Array.isArray(value)) {
+                value.forEach(v => {
+                  if (v) {
+                    queryParams.append(key, String(v))
+                  }
+                })
+              } else {
+                queryParams.append(key, String(value))
+              }
+            }
+          })
+        }
+        
+        // Legacy support for status and category (deprecated, use filters object)
         if (params.status) {
           queryParams.append('status', params.status)
         }
@@ -261,7 +282,7 @@ class UserTableApiClient {
   /**
    * Get distinct values for a filter field
    */
-  async getFilterValues(field: 'status' | 'category', limit: number = 1000): Promise<string[]> {
+  async getFilterValues(field: 'status' | 'category' | 'Company' | 'User Roles' | 'Modules', limit: number = 1000): Promise<string[]> {
     try {
       const response = await fetch(`${this.baseUrl}/filters/values?field=${field}&limit=${limit}`, {
         method: 'GET',

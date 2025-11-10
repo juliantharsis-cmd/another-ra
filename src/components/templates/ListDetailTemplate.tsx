@@ -25,6 +25,7 @@ import { FixedSizeList } from 'react-window'
 import { useTableDataCache } from '@/hooks/useTableDataCache'
 import { enhanceWithCachedRelationships } from '@/lib/utils/enhanceWithCachedRelationships'
 import { fetchFieldMapping, getFieldMapping } from '@/lib/fieldIdMapping'
+import FilterPopover from './FilterPopover'
 
 interface ListDetailTemplateProps<T = any> {
   config: ListDetailTemplateConfig<T>
@@ -169,7 +170,57 @@ export default function ListDetailTemplate<T extends { id: string }>({
 
   // Filter and sort state
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  
+  // Persistent filtering preference (stored per table)
+  const [persistentFiltering, setPersistentFiltering] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(`persistent_filtering_${entityNamePlural}`)
+      return stored !== 'false' // Default to true (persistent)
+    }
+    return true
+  })
+  
+  // Load saved filters from preferences (only if persistent filtering is enabled)
+  const savedFilters = useMemo(() => {
+    if (!persistentFiltering) return {}
+    const prefs = getTablePreferences(entityNamePlural)
+    return prefs?.activeFilters || {}
+  }, [entityNamePlural, persistentFiltering])
+  
+  // Initialize activeFilters with saved filters synchronously to prevent double API calls
+  const [activeFilters, setActiveFilters] = useState<Record<string, string | string[]>>(() => {
+    if (persistentFiltering) {
+      const prefs = getTablePreferences(entityNamePlural)
+      return prefs?.activeFilters || {}
+    }
+    return {}
+  })
+  const hasLoadedInitialFilters = useRef<string | null>(null)
+  
+  // Load saved filters when table changes (only once per table, not when toggling)
+  useEffect(() => {
+    // Reset ref when table changes
+    if (hasLoadedInitialFilters.current !== entityNamePlural) {
+      hasLoadedInitialFilters.current = null
+    }
+    
+    // Only load saved filters on initial mount for this table, not when toggling persistence
+    // This handles the case where persistentFiltering changes from false to true on mount
+    if (hasLoadedInitialFilters.current !== entityNamePlural && persistentFiltering) {
+      const prefs = getTablePreferences(entityNamePlural)
+      if (prefs?.activeFilters && Object.keys(prefs.activeFilters).length > 0) {
+        // Only update if current filters are empty (to avoid overwriting user's current filters)
+        setActiveFilters(prev => {
+          if (Object.keys(prev).length === 0 && prefs.activeFilters) {
+            return prefs.activeFilters
+          }
+          return prev
+        })
+      }
+      hasLoadedInitialFilters.current = entityNamePlural
+    }
+    // Note: We don't clear filters when disabling persistence - user keeps their current view
+  }, [entityNamePlural, persistentFiltering]) // Include persistentFiltering but use ref to prevent re-loading when toggling
   const [sortBy, setSortBy] = useState<string>(defaultSort?.field || '')
   const [sortOrder, setSortOrder] = useState<SortDirection>(defaultSort?.order || 'asc')
 
@@ -208,6 +259,16 @@ export default function ListDetailTemplate<T extends { id: string }>({
   
   // Utility controls
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+  
+  // Track which filter popover is open
+  const [openFilterKey, setOpenFilterKey] = useState<string | null>(null)
+  
+  // Count active filters
+  const activeFilterCount = useMemo(() => {
+    return Object.values(activeFilters).filter(v => 
+      v && (Array.isArray(v) ? v.length > 0 : v !== '')
+    ).length
+  }, [activeFilters])
 
   // Table configuration state
   const [tableConfiguration, setTableConfiguration] = useState<any>(null)
@@ -817,7 +878,8 @@ export default function ListDetailTemplate<T extends { id: string }>({
   }, [searchQuery])
   
   // Debounced filter changes (200ms as per optimization spec)
-  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string>>({})
+  // Initialize with activeFilters to prevent double API calls on mount
+  const [debouncedFilters, setDebouncedFilters] = useState<Record<string, string | string[]>>(activeFilters)
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedFilters(activeFilters)
@@ -927,21 +989,29 @@ export default function ListDetailTemplate<T extends { id: string }>({
   
   // Update items when cached data changes (from data caching hook)
   useEffect(() => {
-    if (isDataCachingEnabled && cachedItemsData.length > 0) {
-      // Enhance with cached relationship names for better performance
-      const enhanced = enhanceWithCachedRelationships(cachedItemsData as any[])
-      setItems(enhanced as T[])
-      setIsLoading(isCacheLoading)
-      
-      // Generate search suggestions from cached items
-      const titleField = columns.find(col => col.key === panel.titleKey)
-      if (titleField) {
-        const suggestions = cachedItemsData
-          .map(item => (item as any)[panel.titleKey])
-          .filter(Boolean)
-          .slice(0, 10)
-        setSearchSuggestions(suggestions)
+    if (isDataCachingEnabled) {
+      // Always update items and loading state, even if empty
+      // This ensures "No records" message shows when filters return 0 results
+      if (cachedItemsData.length > 0) {
+        // Enhance with cached relationship names for better performance
+        const enhanced = enhanceWithCachedRelationships(cachedItemsData as any[])
+        setItems(enhanced as T[])
+        
+        // Generate search suggestions from cached items
+        const titleField = columns.find(col => col.key === panel.titleKey)
+        if (titleField) {
+          const suggestions = cachedItemsData
+            .map(item => (item as any)[panel.titleKey])
+            .filter(Boolean)
+            .slice(0, 10)
+          setSearchSuggestions(suggestions)
+        }
+      } else {
+        // Empty result - clear items to show "No records" message
+        setItems([])
       }
+      // Always update loading state from cache
+      setIsLoading(isCacheLoading)
     }
   }, [cachedItemsData, isCacheLoading, isDataCachingEnabled, columns, panel.titleKey])
   
@@ -1122,14 +1192,92 @@ export default function ListDetailTemplate<T extends { id: string }>({
     setCurrentPage(1)
   }, [sortBy, sortOrder])
 
-  // Handle filter change
-  const handleFilterChange = useCallback((key: string, value: string) => {
+  // Handle filter change (supports both single and multi-select)
+  const handleFilterChange = useCallback((key: string, value: string | string[]) => {
     setActiveFilters(prev => {
       const updated = { ...prev }
-      if (value) {
+      if (value && (Array.isArray(value) ? value.length > 0 : value !== '')) {
         updated[key] = value
       } else {
         delete updated[key]
+      }
+      
+      // Save filters to preferences (debounced via useEffect below)
+      return updated
+    })
+    setCurrentPage(1)
+  }, [])
+  
+  // Save filters to preferences when they change (debounced) - only if persistent filtering is enabled
+  useEffect(() => {
+    if (!persistentFiltering) return
+    
+    const timer = setTimeout(() => {
+      const prefs = getTablePreferences(entityNamePlural) || {
+        columnVisibility: {},
+        columnOrder: [],
+      }
+      saveTablePreferences(entityNamePlural, {
+        ...prefs,
+        activeFilters,
+      })
+    }, 500) // Debounce saves by 500ms
+    
+    return () => clearTimeout(timer)
+  }, [activeFilters, entityNamePlural, persistentFiltering])
+  
+  // Save persistent filtering preference
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`persistent_filtering_${entityNamePlural}`, String(persistentFiltering))
+    }
+  }, [persistentFiltering, entityNamePlural])
+  
+  // Toggle persistent filtering
+  const handleTogglePersistentFiltering = useCallback(() => {
+    const newValue = !persistentFiltering
+    setPersistentFiltering(newValue)
+    
+    if (newValue) {
+      // Enabling persistence: save current filters immediately
+      const prefs = getTablePreferences(entityNamePlural) || {
+        columnVisibility: {},
+        columnOrder: [],
+      }
+      saveTablePreferences(entityNamePlural, {
+        ...prefs,
+        activeFilters, // Save current active filters
+      })
+    } else {
+      // Disabling persistence: clear saved filters from preferences
+      // But keep current filters visible (they just won't persist)
+      const prefs = getTablePreferences(entityNamePlural) || {
+        columnVisibility: {},
+        columnOrder: [],
+      }
+      saveTablePreferences(entityNamePlural, {
+        ...prefs,
+        activeFilters: {},
+      })
+    }
+  }, [persistentFiltering, entityNamePlural, activeFilters])
+  
+  // Handle multi-select filter toggle
+  const handleMultiSelectToggle = useCallback((filterKey: string, optionValue: string) => {
+    setActiveFilters(prev => {
+      const currentValue = prev[filterKey]
+      const currentArray = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : [])
+      
+      // Toggle the option
+      const newArray = currentArray.includes(optionValue)
+        ? currentArray.filter(v => v !== optionValue)
+        : [...currentArray, optionValue]
+      
+      const updated = { ...prev }
+      if (newArray.length > 0) {
+        updated[filterKey] = newArray
+      } else {
+        delete updated[filterKey]
       }
       return updated
     })
@@ -1141,7 +1289,18 @@ export default function ListDetailTemplate<T extends { id: string }>({
     setActiveFilters({})
     setSearchQuery('')
     setCurrentPage(1)
-  }, [])
+    // Clear saved filters from preferences (only if persistent filtering is enabled)
+    if (persistentFiltering) {
+      const prefs = getTablePreferences(entityNamePlural) || {
+        columnVisibility: {},
+        columnOrder: [],
+      }
+      saveTablePreferences(entityNamePlural, {
+        ...prefs,
+        activeFilters: {},
+      })
+    }
+  }, [entityNamePlural, persistentFiltering])
 
   // Handle delete
   const handleDelete = useCallback(async (id: string) => {
@@ -1469,13 +1628,75 @@ export default function ListDetailTemplate<T extends { id: string }>({
   }, [apiClient, loadItems])
 
 
+  // Extract exportable text value from item data
+  const getExportValue = useCallback((column: typeof configuredColumns[0], item: T): string => {
+    const value = (item as any)[column.key]
+    
+    // Handle null/undefined
+    if (value === null || value === undefined || value === '') {
+      return ''
+    }
+    
+    // Handle arrays (e.g., CompanyName, User Roles Name, ModulesName)
+    if (Array.isArray(value)) {
+      // Filter out record IDs and empty values
+      const validValues = value.filter(v => 
+        v && 
+        typeof v === 'string' && 
+        v !== '' && 
+        !v.startsWith('rec') && 
+        v !== '—'
+      )
+      return validValues.length > 0 ? validValues.join('; ') : ''
+    }
+    
+    // Handle objects (e.g., attachments)
+    if (typeof value === 'object') {
+      // Check if it's an attachment object
+      if (value.url || value.filename || value.thumbnails) {
+        return value.filename || value.name || value.url || ''
+      }
+      // For other objects, try to extract meaningful data
+      if (value.label) return String(value.label)
+      if (value.name) return String(value.name)
+      if (value.text) return String(value.text)
+      // If it's an object with no extractable text, return empty
+      return ''
+    }
+    
+    // Handle strings - filter out record IDs
+    if (typeof value === 'string') {
+      if (value.startsWith('rec') && value.length > 10) {
+        // Likely a record ID, try to find resolved name
+        // Check for resolved name fields (e.g., CompanyName for Company)
+        const resolvedKey = column.key === 'Company' ? 'CompanyName' :
+                           column.key === 'User Roles' ? 'User Roles Name' :
+                           column.key === 'Modules' ? 'ModulesName' : null
+        if (resolvedKey) {
+          const resolvedValue = (item as any)[resolvedKey]
+          if (resolvedValue) {
+            if (Array.isArray(resolvedValue)) {
+              return resolvedValue.filter(v => v && !v.startsWith('rec')).join('; ')
+            }
+            return String(resolvedValue)
+          }
+        }
+        return '' // Don't export record IDs
+      }
+      return value
+    }
+    
+    // For other types, convert to string
+    return String(value)
+  }, [configuredColumns])
+
   // Handle export
   const handleExport = useCallback(() => {
     trackEvent({ type: 'table.export_clicked', tableId: entityNamePlural })
     try {
       // Create CSV content
       const escapeCSV = (value: any): string => {
-        if (value === null || value === undefined) return ''
+        if (value === null || value === undefined || value === '') return ''
         const str = String(value)
         if (str.includes(',') || str.includes('"') || str.includes('\n')) {
           return `"${str.replace(/"/g, '""')}"`
@@ -1483,11 +1704,12 @@ export default function ListDetailTemplate<T extends { id: string }>({
         return str
       }
 
+      // Use only visible columns from configuredColumns
       const headers = configuredColumns.map(col => col.label)
       const rows = items.map((item) => 
         configuredColumns.map(column => {
-          const value = (item as any)[column.key]
-          return escapeCSV(column.render ? column.render(value, item) : value)
+          const exportValue = getExportValue(column, item)
+          return escapeCSV(exportValue)
         })
       )
       
@@ -1508,7 +1730,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
       console.error('Export error:', error)
       alert(`Failed to export: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
-  }, [items, configuredColumns, entityNamePlural])
+  }, [items, configuredColumns, entityNamePlural, getExportValue])
 
 
   // Render cell content
@@ -1859,7 +2081,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
               <button
                 onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
                 className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-4 py-2.5 border rounded-lg text-sm font-medium transition-all ${
-                  isFilterPanelOpen || Object.values(activeFilters).some(v => v)
+                  isFilterPanelOpen || activeFilterCount > 0
                     ? 'border-green-500 bg-green-50 text-green-700'
                     : 'border-neutral-300 bg-white text-neutral-700 hover:border-green-500 hover:text-green-600'
                 }`}
@@ -1875,9 +2097,9 @@ export default function ListDetailTemplate<T extends { id: string }>({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
                 <span>Filters</span>
-                {Object.values(activeFilters).filter(v => v).length > 0 && (
+                {activeFilterCount > 0 && (
                   <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded-full min-w-[20px] text-center">
-                    {Object.values(activeFilters).filter(v => v).length}
+                    {activeFilterCount}
                   </span>
                 )}
                 <svg
@@ -1897,49 +2119,131 @@ export default function ListDetailTemplate<T extends { id: string }>({
         {isFilterPanelOpen && filters.length > 0 && (
           <div className="mt-3 border border-neutral-200 rounded-lg bg-white shadow-sm">
             <div className="p-4 space-y-4">
-              {/* Panel Header with Clear Button */}
+              {/* Panel Header with Clear Button and Persistent Toggle */}
               <div className="flex items-center justify-between pb-3 border-b border-neutral-200">
                 <h3 className="text-sm font-semibold text-neutral-900">Filter Options</h3>
-                {(searchQuery || Object.values(activeFilters).some(v => v)) && (
+                <div className="flex items-center gap-3">
+                  {/* Persistent Filtering Toggle */}
                   <button
-                    onClick={handleClearFilters}
-                    className="text-xs text-neutral-500 hover:text-green-600 transition-colors font-medium"
+                    onClick={handleTogglePersistentFiltering}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      persistentFiltering
+                        ? 'bg-green-50 text-green-700 border border-green-200'
+                        : 'bg-neutral-50 text-neutral-600 border border-neutral-200 hover:bg-neutral-100'
+                    }`}
+                    title={persistentFiltering ? 'Filters persist across sessions' : 'Filters reset when leaving page'}
                   >
-                    Clear all filters
-                  </button>
-                )}
-              </div>
-
-              {/* Filter Dropdowns - Responsive Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filters.map(filter => (
-                  <div key={filter.key} className="relative">
-                    <select
-                      value={activeFilters[filter.key] || ''}
-                      onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                      className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm text-neutral-900 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all appearance-none pr-8"
-                    >
-                      <option value="">All {filter.label}</option>
-                      {(filterOptions[filter.key] || []).map(option => {
-                        // Handle formatted options like "Name|ID" for relationship filters
-                        const displayValue = option.includes('|') ? option.split('|')[0] : option
-                        const filterValue = option.includes('|') ? option.split('|')[1] : option
-                        return (
-                          <option key={option} value={filterValue}>{displayValue}</option>
-                        )
-                      })}
-                    </select>
                     <svg
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none"
+                      className={`w-3.5 h-3.5 ${persistentFiltering ? 'text-green-600' : 'text-neutral-400'}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      {persistentFiltering ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      )}
                     </svg>
-                  </div>
-                ))}
+                    <span>Persistent</span>
+                  </button>
+                  
+                  {(searchQuery || Object.values(activeFilters).some(v => v)) && (
+                    <button
+                      onClick={handleClearFilters}
+                      className="text-xs text-neutral-500 hover:text-green-600 transition-colors font-medium"
+                    >
+                      Clear all filters
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Filter Popovers - Horizontal Row */}
+              <div className="flex flex-wrap items-center gap-2">
+                {filters.map(filter => {
+                  const isMultiSelect = filter.type === 'multiselect'
+                  const selectedValue = activeFilters[filter.key]
+                  const isOpen = openFilterKey === filter.key
+                  
+                  return (
+                    <div key={filter.key}>
+                      <FilterPopover
+                        label={filter.label}
+                        options={filterOptions[filter.key] || []}
+                        value={selectedValue || (isMultiSelect ? [] : '')}
+                        onChange={(newValue) => {
+                          if (isMultiSelect) {
+                            handleFilterChange(filter.key, newValue)
+                          } else {
+                            handleFilterChange(filter.key, newValue as string)
+                          }
+                        }}
+                        multiple={isMultiSelect}
+                        isOpen={isOpen}
+                        onToggle={(open) => {
+                          // Close other filters when opening a new one
+                          setOpenFilterKey(open ? filter.key : null)
+                        }}
+                        placeholder="Find an option"
+                        fieldKey={filter.key}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+              
+              {/* Active Filters Summary */}
+              {Object.values(activeFilters).filter(v => v).length > 0 && (
+                <div className="pt-3 border-t border-neutral-200">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-neutral-500 font-medium">Active filters:</span>
+                    {filters
+                      .filter(f => activeFilters[f.key])
+                      .map(filter => {
+                        const selectedValue = activeFilters[filter.key]
+                        const isMultiSelect = filter.type === 'multiselect'
+                        const selectedValues = isMultiSelect && Array.isArray(selectedValue) 
+                          ? selectedValue 
+                          : (selectedValue ? [selectedValue] : [])
+                        
+                        // Get display names for selected values
+                        const displayNames = selectedValues.map(val => {
+                          const option = (filterOptions[filter.key] || []).find(opt => {
+                            const filterValue = opt.includes('|') ? opt.split('|')[1] : opt
+                            return filterValue === val
+                          })
+                          return option 
+                            ? (option.includes('|') ? option.split('|')[0] : option)
+                            : val
+                        })
+                        
+                        return (
+                          <span
+                            key={filter.key}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-200"
+                          >
+                            <span className="font-semibold">{filter.label}:</span>
+                            <span>
+                              {isMultiSelect && displayNames.length > 1
+                                ? `${displayNames.length} selected`
+                                : displayNames[0] || selectedValue}
+                            </span>
+                            <button
+                              onClick={() => handleFilterChange(filter.key, '')}
+                              className="ml-0.5 hover:text-green-900 focus:outline-none"
+                              aria-label={`Clear ${filter.label} filter`}
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </span>
+                        )
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2013,9 +2317,60 @@ export default function ListDetailTemplate<T extends { id: string }>({
               showHeader={true}
             />
           </div>
-        ) : items.length === 0 ? (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-neutral-500">{emptyStateMessage}</p>
+        ) : !isLoading && items.length === 0 ? (
+          <div className="w-full overflow-x-auto border border-neutral-200 rounded-lg bg-white shadow-sm">
+            <table className="w-full" style={{ tableLayout: 'auto', minWidth: '100%' }}>
+              <thead className="bg-neutral-50 border-b border-neutral-200">
+                <tr>
+                  {configuredColumns.map((column) => (
+                    <th
+                      key={column.key}
+                      className={`px-4 py-3 text-left text-xs font-semibold text-neutral-700 uppercase tracking-wider ${column.width || ''}`}
+                      style={{ minWidth: column.width ? undefined : '120px' }}
+                    >
+                      {column.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan={configuredColumns.length} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <svg
+                        className="w-16 h-16 text-neutral-300 mb-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {Object.keys(activeFilters).length > 0 || searchQuery ? (
+                        <>
+                          <p className="text-lg font-medium text-neutral-700 mb-2">No records matching your criteria</p>
+                          <p className="text-sm text-neutral-500 text-center max-w-md mb-4">
+                            Try adjusting your filters or search query to find what you're looking for.
+                          </p>
+                          <button
+                            onClick={handleClearFilters}
+                            className="px-4 py-2 text-sm text-green-600 hover:text-green-700 border border-green-300 rounded-lg hover:border-green-400 transition-colors"
+                          >
+                            Clear all filters
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-lg font-medium text-neutral-700 mb-2">No {entityNamePlural.toLowerCase()} found</p>
+                          <p className="text-sm text-neutral-500 text-center max-w-md">
+                            There are no {entityNamePlural.toLowerCase()} in the system yet. Create your first {entityName.toLowerCase()} to get started.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="w-full overflow-x-auto border border-neutral-200 rounded-lg bg-neutral-50 shadow-sm relative">

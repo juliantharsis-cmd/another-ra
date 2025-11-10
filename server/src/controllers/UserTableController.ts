@@ -16,10 +16,29 @@ export class UserTableController {
         sortBy,
         sortOrder,
         search,
-        status,
-        category,
         paginated,
       } = req.query
+
+      // Build filters object from all query parameters (except pagination/sort/search params)
+      const filters: Record<string, any> = {}
+      const excludeParams = ['limit', 'offset', 'sortBy', 'sortOrder', 'search', 'paginated']
+      
+      Object.keys(req.query).forEach(key => {
+        if (!excludeParams.includes(key) && req.query[key]) {
+          const value = req.query[key]
+          // Express automatically converts multiple query params with same name to array
+          // e.g., ?Company=rec1&Company=rec2 becomes { Company: ['rec1', 'rec2'] }
+          // If it's already an array, use it; otherwise, check if it's a comma-separated string
+          if (Array.isArray(value)) {
+            filters[key] = value
+          } else if (typeof value === 'string' && value.includes(',')) {
+            // Handle comma-separated string (backward compatibility)
+            filters[key] = value.split(',').map(v => v.trim()).filter(v => v)
+          } else {
+            filters[key] = value
+          }
+        }
+      })
 
       // Build query options
       const options: QueryOptions = {
@@ -28,10 +47,7 @@ export class UserTableController {
         sortBy: sortBy as string,
         sortOrder: sortOrder as 'asc' | 'desc' | undefined,
         search: search as string,
-        filters: {
-          ...(status && { status: status as string }),
-          ...(category && { category: category as string }),
-        },
+        filters: Object.keys(filters).length > 0 ? filters : undefined,
       }
 
       // If paginated flag is set or limit/offset provided, use pagination
@@ -206,6 +222,7 @@ export class UserTableController {
   /**
    * GET /users/filters/values
    * Get distinct filter values for a field
+   * For linked records (Company, User Roles, Modules), returns only values actually used in user table
    */
   async getFilterValues(req: Request, res: Response): Promise<void> {
     try {
@@ -220,17 +237,33 @@ export class UserTableController {
         return
       }
 
-      const validFields = ['status', 'category']
-      if (!validFields.includes(field)) {
-        res.status(400).json({
-          success: false,
-          error: 'Validation error',
-          message: `Field must be one of: ${validFields.join(', ')}`,
+      const limitNum = limit ? parseInt(limit as string) : 1000
+      
+      // Handle linked record fields - get only values used in user table
+      const linkedRecordFields = ['Company', 'User Roles', 'Modules']
+      if (linkedRecordFields.includes(field)) {
+        const values = await userTableRepository.getLinkedRecordFilterValues(
+          field as 'Company' | 'User Roles' | 'Modules',
+          limitNum
+        )
+        res.json({
+          success: true,
+          data: values,
         })
         return
       }
 
-      const limitNum = limit ? parseInt(limit as string) : 1000
+      // Handle regular fields (status, category, etc.)
+      const validFields = ['status', 'category', 'Status']
+      if (!validFields.includes(field.toLowerCase())) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          message: `Field must be one of: ${[...validFields, ...linkedRecordFields].join(', ')}`,
+        })
+        return
+      }
+
       const values = await userTableRepository.getDistinctFieldValues(field, limitNum)
 
       res.json({

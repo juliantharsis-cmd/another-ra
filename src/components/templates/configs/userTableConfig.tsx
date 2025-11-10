@@ -16,6 +16,7 @@
 import { ListDetailTemplateConfig } from '../types'
 import { userTableApi } from '@/lib/api/userTable'
 import type { UserTable } from '@/lib/api/userTable'
+import { autoGenerateFilters, mergeFilters } from '@/lib/autoGenerateFilters'
 
 // Create API client adapter
 const userTableApiClient = {
@@ -33,7 +34,7 @@ const userTableApiClient = {
       search: params.search,
       sortBy: params.sortBy,
       sortOrder: params.sortOrder,
-      status: params.filters?.status || params.filters?.Status,
+      filters: params.filters, // Pass all filters
     })
     return {
       data: result.data,
@@ -58,12 +59,240 @@ const userTableApiClient = {
     await userTableApi.delete(id)
   },
   getFilterValues: async (field: string, limit?: number) => {
-    return await userTableApi.getFilterValues(field as 'status', limit)
+    return await userTableApi.getFilterValues(field as 'status' | 'Company' | 'User Roles' | 'Modules', limit)
   },
   bulkImport: async (userTables: Partial<UserTable>[]) => {
     return await userTableApi.bulkImport(userTables as any[])
   },
 }
+
+// Define fields first (needed for auto-generating filters)
+const userTableFields = [
+  // General Information
+  {
+    key: 'Email',
+    label: 'Email',
+    type: 'text' as const,
+    required: true,
+    editable: true,
+    section: 'general',
+  },
+  {
+    key: 'First Name',
+    label: 'First Name',
+    type: 'text' as const,
+    editable: true,
+    section: 'general',
+  },
+  {
+    key: 'Last Name',
+    label: 'Last Name',
+    type: 'text' as const,
+    editable: true,
+    section: 'general',
+  },
+  {
+    key: 'User Name',
+    label: 'User Name',
+    type: 'text' as const,
+    editable: true,
+    section: 'general',
+  },
+  {
+    key: 'UID',
+    label: 'UID',
+    type: 'text' as const,
+    editable: true,
+    section: 'general',
+  },
+  {
+    key: 'Status',
+    label: 'Status',
+    type: 'select' as const,
+    required: true,
+    editable: true,
+    options: async () => {
+      return await userTableApi.getFilterValues('status', 100)
+    },
+    section: 'general',
+  },
+  // Profile & Scope
+  {
+    key: 'Profile Name',
+    label: 'Profile Name',
+    type: 'text' as const,
+    editable: true,
+    section: 'profile',
+  },
+  {
+    key: 'Activity Scope',
+    label: 'Activity Scope',
+    type: 'text' as const,
+    editable: true,
+    section: 'profile',
+  },
+  {
+    key: 'Attachment',
+    label: 'Profile Picture',
+    type: 'attachment' as const,
+    editable: true,
+    section: 'profile',
+  },
+  // Relationships (linked records - now editable with resolved names)
+  // Note: Organization Scope removed - table doesn't exist
+  {
+    key: 'Company',
+    label: 'Company',
+    type: 'choiceList' as const,
+    editable: true,
+    options: async (searchQuery?: string, signal?: AbortSignal) => {
+      // Fetch companies with search support - optimized for large datasets
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+        
+        // Build query with search if provided
+        const queryParams = new URLSearchParams()
+        queryParams.append('paginated', 'true')
+        
+        if (searchQuery && searchQuery.trim()) {
+          // If search query provided, use search parameter (more efficient - searches all records)
+          queryParams.append('search', searchQuery.trim())
+          queryParams.append('limit', '100') // Limit results when searching (enough for most cases)
+        } else {
+          // Initial load: fetch first page only (optimized - fast initial load)
+          queryParams.append('limit', '50')
+          queryParams.append('offset', '0')
+          queryParams.append('sortBy', 'companyName') // Sort for consistent initial view
+          queryParams.append('sortOrder', 'asc')
+        }
+        
+        // Use provided abort signal or create a timeout signal
+        const abortSignal = signal || AbortSignal.timeout(10000)
+        
+        const response = await fetch(`${API_BASE_URL}/companies?${queryParams.toString()}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          signal: abortSignal, // Use the abort signal for cancellation
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data) {
+            return result.data.map((company: any) => {
+              const name = company.companyName || company.id
+              return `${name}|${company.id}`
+            })
+          }
+        }
+      } catch (err: any) {
+        // Re-throw abort errors so they can be handled by AsyncChoiceList
+        if (err.name === 'AbortError' || err.name === 'TimeoutError') {
+          throw err // Let AsyncChoiceList handle abort gracefully
+        }
+        console.error('Error fetching Companies:', err)
+      }
+      return []
+    },
+    searchable: true, // Enable search-based fetching for all companies
+    section: 'relationships',
+  },
+  {
+    key: 'User Roles',
+    label: 'User Roles',
+    type: 'choiceList' as const,
+    editable: true,
+    options: async () => {
+      // Fetch User Roles records from backend
+      // NOTE: This endpoint doesn't exist yet - returning empty array gracefully
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+        const response = await fetch(`${API_BASE_URL}/user-roles?limit=1000&paginated=true`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data) {
+            return result.data.map((role: any) => {
+              const name = role.Name || role.name || role.id
+              return `${name}|${role.id}`
+            })
+          }
+        } else if (response.status === 404) {
+          // Endpoint doesn't exist yet - this is expected
+          console.log('⚠️ User Roles API endpoint not available yet (404)')
+          return []
+        }
+      } catch (err) {
+        // Network error or endpoint doesn't exist - fail gracefully
+        console.log('⚠️ User Roles API endpoint not available:', err instanceof Error ? err.message : 'Unknown error')
+      }
+      return []
+    },
+    section: 'relationships',
+  },
+  // Organization Scope removed - table doesn't exist
+  {
+    key: 'Modules',
+    label: 'Modules',
+    type: 'choiceList' as const,
+    editable: true,
+    options: async () => {
+      // Fetch Modules records from backend (uses Application List table)
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+        const response = await fetch(`${API_BASE_URL}/application-list?limit=1000&paginated=true`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data) {
+            return result.data.map((module: any) => {
+              const name = module.Name || module.name || module.id
+              return `${name}|${module.id}`
+            })
+          }
+        } else if (response.status === 404) {
+          console.log('⚠️ Application List API endpoint not available (404)')
+          return []
+        }
+      } catch (err) {
+        console.log('⚠️ Application List API endpoint error:', err instanceof Error ? err.message : 'Unknown error')
+      }
+      return []
+    },
+    section: 'relationships',
+  },
+  // Notes
+  {
+    key: 'Notes',
+    label: 'Notes',
+    type: 'textarea' as const,
+    editable: true,
+    placeholder: 'Add notes...',
+    section: 'notes',
+  },
+]
+
+// Manual filters (can be overridden or extended)
+const manualFilters = [
+  {
+    key: 'status',
+    label: 'Status',
+    type: 'multiselect' as const, // Support multiple status selections
+    options: async () => {
+      return await userTableApi.getFilterValues('status', 100)
+    },
+    placeholder: 'All Status',
+  },
+]
+
+// Auto-generate filters for non-text fields
+const autoGeneratedFilters = autoGenerateFilters(userTableFields, userTableApiClient, manualFilters)
+
+// Merge manual and auto-generated filters
+const allFilters = mergeFilters(manualFilters, autoGeneratedFilters)
 
 export const userTableConfig: ListDetailTemplateConfig<UserTable> = {
   entityName: 'User',
@@ -340,225 +569,11 @@ export const userTableConfig: ListDetailTemplateConfig<UserTable> = {
     },
   ],
 
-  filters: [
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'select',
-      options: async () => {
-        return await userTableApi.getFilterValues('status', 100)
-      },
-      placeholder: 'All Status',
-    },
-  ],
+  // Filters: Auto-generated from field configurations
+  // Status filter is manually configured, others are auto-generated
+  filters: allFilters,
 
-  fields: [
-    // General Information
-    {
-      key: 'Email',
-      label: 'Email',
-      type: 'text',
-      required: true,
-      editable: true,
-      section: 'general',
-    },
-    {
-      key: 'First Name',
-      label: 'First Name',
-      type: 'text',
-      editable: true,
-      section: 'general',
-    },
-    {
-      key: 'Last Name',
-      label: 'Last Name',
-      type: 'text',
-      editable: true,
-      section: 'general',
-    },
-    {
-      key: 'User Name',
-      label: 'User Name',
-      type: 'text',
-      editable: true,
-      section: 'general',
-    },
-    {
-      key: 'UID',
-      label: 'UID',
-      type: 'text',
-      editable: true,
-      section: 'general',
-    },
-    {
-      key: 'Status',
-      label: 'Status',
-      type: 'select',
-      required: true,
-      editable: true,
-      options: async () => {
-        return await userTableApi.getFilterValues('status', 100)
-      },
-      section: 'general',
-    },
-    // Profile & Scope
-    {
-      key: 'Profile Name',
-      label: 'Profile Name',
-      type: 'text',
-      editable: true,
-      section: 'profile',
-    },
-    {
-      key: 'Activity Scope',
-      label: 'Activity Scope',
-      type: 'text',
-      editable: true,
-      section: 'profile',
-    },
-    {
-      key: 'Attachment',
-      label: 'Profile Picture',
-      type: 'attachment',
-      editable: true,
-      section: 'profile',
-    },
-    // Relationships (linked records - now editable with resolved names)
-    // Note: Organization Scope removed - table doesn't exist
-    {
-      key: 'Company',
-      label: 'Company',
-      type: 'choiceList',
-      editable: true,
-      options: async (searchQuery?: string, signal?: AbortSignal) => {
-        // Fetch companies with search support - optimized for large datasets
-        try {
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-          
-          // Build query with search if provided
-          const queryParams = new URLSearchParams()
-          queryParams.append('paginated', 'true')
-          
-          if (searchQuery && searchQuery.trim()) {
-            // If search query provided, use search parameter (more efficient - searches all records)
-            queryParams.append('search', searchQuery.trim())
-            queryParams.append('limit', '100') // Limit results when searching (enough for most cases)
-          } else {
-            // Initial load: fetch first page only (optimized - fast initial load)
-            queryParams.append('limit', '50')
-            queryParams.append('offset', '0')
-            queryParams.append('sortBy', 'companyName') // Sort for consistent initial view
-            queryParams.append('sortOrder', 'asc')
-          }
-          
-          // Use provided abort signal or create a timeout signal
-          const abortSignal = signal || AbortSignal.timeout(10000)
-          
-          const response = await fetch(`${API_BASE_URL}/companies?${queryParams.toString()}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            signal: abortSignal, // Use the abort signal for cancellation
-          })
-          
-          if (response.ok) {
-            const result = await response.json()
-            if (result.success && result.data) {
-              return result.data.map((company: any) => {
-                const name = company.companyName || company.id
-                return `${name}|${company.id}`
-              })
-            }
-          }
-        } catch (err: any) {
-          // Re-throw abort errors so they can be handled by AsyncChoiceList
-          if (err.name === 'AbortError' || err.name === 'TimeoutError') {
-            throw err // Let AsyncChoiceList handle abort gracefully
-          }
-          console.error('Error fetching Companies:', err)
-        }
-        return []
-      },
-      searchable: true, // Enable search-based fetching for all companies
-      section: 'relationships',
-    },
-    {
-      key: 'User Roles',
-      label: 'User Roles',
-      type: 'choiceList',
-      editable: true,
-      options: async () => {
-        // Fetch User Roles records from backend
-        // NOTE: This endpoint doesn't exist yet - returning empty array gracefully
-        try {
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-          const response = await fetch(`${API_BASE_URL}/user-roles?limit=1000&paginated=true`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          })
-          if (response.ok) {
-            const result = await response.json()
-            if (result.success && result.data) {
-              return result.data.map((role: any) => {
-                const name = role.Name || role.name || role.id
-                return `${name}|${role.id}`
-              })
-            }
-          } else if (response.status === 404) {
-            // Endpoint doesn't exist yet - this is expected
-            console.log('⚠️ User Roles API endpoint not available yet (404)')
-            return []
-          }
-        } catch (err) {
-          // Network error or endpoint doesn't exist - fail gracefully
-          console.log('⚠️ User Roles API endpoint not available:', err instanceof Error ? err.message : 'Unknown error')
-        }
-        return []
-      },
-      section: 'relationships',
-    },
-    // Organization Scope removed - table doesn't exist
-    {
-      key: 'Modules',
-      label: 'Modules',
-      type: 'choiceList',
-      editable: true,
-      options: async () => {
-        // Fetch Modules records from backend (uses Application List table)
-        try {
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
-          const response = await fetch(`${API_BASE_URL}/application-list?limit=1000&paginated=true`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-          })
-          if (response.ok) {
-            const result = await response.json()
-            if (result.success && result.data) {
-              return result.data.map((module: any) => {
-                const name = module.Name || module.name || module.id
-                return `${name}|${module.id}`
-              })
-            }
-          } else if (response.status === 404) {
-            console.log('⚠️ Application List API endpoint not available (404)')
-            return []
-          }
-        } catch (err) {
-          console.log('⚠️ Application List API endpoint error:', err instanceof Error ? err.message : 'Unknown error')
-        }
-        return []
-      },
-      section: 'relationships',
-    },
-    // Notes
-    {
-      key: 'Notes',
-      label: 'Notes',
-      type: 'textarea',
-      editable: true,
-      placeholder: 'Add notes...',
-      section: 'notes',
-    },
-  ],
+  fields: userTableFields,
 
   panel: {
     titleKey: 'Email', // Use Email as the primary identifier

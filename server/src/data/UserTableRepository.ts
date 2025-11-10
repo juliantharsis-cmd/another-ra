@@ -124,6 +124,23 @@ export class UserTableRepository {
       return []
     }
   }
+
+  /**
+   * Get linked record filter values (only values actually used in user table)
+   * Returns format: "Name|ID"
+   */
+  async getLinkedRecordFilterValues(
+    fieldName: 'Company' | 'User Roles' | 'Modules',
+    limit: number = 1000
+  ): Promise<string[]> {
+    try {
+      const service = getUserTableAirtableService()
+      return await service.getLinkedRecordFilterValues(fieldName, limit)
+    } catch (error) {
+      console.error('Error in UserTableRepository.getLinkedRecordFilterValues:', error)
+      return []
+    }
+  }
 }
 
 // Export singleton instance

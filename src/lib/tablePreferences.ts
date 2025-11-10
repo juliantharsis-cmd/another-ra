@@ -31,6 +31,7 @@ export interface TablePreferences {
   }
   listMode?: ListMode
   pageSize?: number // Per-table page size override (overrides user default)
+  activeFilters?: Record<string, string | string[]> // Persistent filter state per user
   // Internal: Track if preferences are using Field IDs
   _usingFieldIds?: boolean
 }
@@ -44,10 +45,22 @@ const STORAGE_PREFIX_LEGACY = 'table_prefs_legacy_' // For migration tracking
  */
 export function getTablePreferences(tableId: string): TablePreferences | null {
   try {
-    const stored = localStorage.getItem(`${STORAGE_PREFIX}${tableId}`)
+    // Sanitize table ID to prevent injection
+    const sanitizedTableId = typeof tableId === 'string' ? tableId.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 100) : String(tableId)
+    if (!sanitizedTableId) {
+      console.error('Invalid table ID for loading preferences')
+      return null
+    }
+    
+    const stored = localStorage.getItem(`${STORAGE_PREFIX}${sanitizedTableId}`)
     if (!stored) return null
     
     const prefs = JSON.parse(stored) as TablePreferences
+    
+    // Sanitize loaded preferences
+    if (prefs.activeFilters) {
+      prefs.activeFilters = sanitizeActiveFilters(prefs.activeFilters)
+    }
     
     // If preferences are stored with Field IDs, convert them back to field keys
     if (prefs._usingFieldIds) {
@@ -80,44 +93,93 @@ export function getTablePreferences(tableId: string): TablePreferences | null {
  * Converts field keys to Field IDs before saving (if mapping is available)
  * This is synchronous - mapping must be fetched beforehand if needed
  */
+/**
+ * Sanitize filter values to prevent XSS and ensure data integrity
+ */
+function sanitizeFilterValue(value: any): any {
+  if (value === null || value === undefined) return value
+  
+  if (typeof value === 'string') {
+    // Remove any script tags and limit length
+    return value.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').slice(0, 500)
+  }
+  
+  if (Array.isArray(value)) {
+    return value.map(sanitizeFilterValue).filter(v => v !== null && v !== undefined)
+  }
+  
+  return value
+}
+
+/**
+ * Sanitize active filters before saving
+ */
+function sanitizeActiveFilters(filters: Record<string, string | string[]> | undefined): Record<string, string | string[]> | undefined {
+  if (!filters) return undefined
+  
+  const sanitized: Record<string, string | string[]> = {}
+  for (const [key, value] of Object.entries(filters)) {
+    // Sanitize key (field name)
+    const sanitizedKey = typeof key === 'string' ? key.replace(/[^a-zA-Z0-9_\- ]/g, '').slice(0, 100) : key
+    if (sanitizedKey) {
+      sanitized[sanitizedKey] = sanitizeFilterValue(value) as string | string[]
+    }
+  }
+  return sanitized
+}
+
 export function saveTablePreferences(tableId: string, preferences: TablePreferences): void {
   try {
+    // Sanitize table ID to prevent injection
+    const sanitizedTableId = typeof tableId === 'string' ? tableId.replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 100) : String(tableId)
+    if (!sanitizedTableId) {
+      console.error('Invalid table ID for saving preferences')
+      return
+    }
+    
+    // Sanitize active filters if present
+    const sanitizedPrefs: TablePreferences = {
+      ...preferences,
+      activeFilters: sanitizeActiveFilters(preferences.activeFilters),
+    }
+    
     // Try to get field mapping (must be already loaded)
-    const mapping = getFieldMapping(tableId)
+    const mapping = getFieldMapping(sanitizedTableId)
     
     if (mapping) {
       // Convert field keys to Field IDs before saving
-      const converted = convertPreferencesToFieldIds(tableId, {
-        columnVisibility: preferences.columnVisibility,
-        columnOrder: preferences.columnOrder,
-        defaultSort: preferences.defaultSort,
+      const converted = convertPreferencesToFieldIds(sanitizedTableId, {
+        columnVisibility: sanitizedPrefs.columnVisibility,
+        columnOrder: sanitizedPrefs.columnOrder,
+        defaultSort: sanitizedPrefs.defaultSort,
       })
       
       const prefsToSave: TablePreferences = {
-        ...preferences,
-        columnVisibility: converted.columnVisibility || preferences.columnVisibility,
-        columnOrder: converted.columnOrder || preferences.columnOrder,
-        defaultSort: converted.defaultSort || preferences.defaultSort,
+        ...sanitizedPrefs,
+        columnVisibility: converted.columnVisibility || sanitizedPrefs.columnVisibility,
+        columnOrder: converted.columnOrder || sanitizedPrefs.columnOrder,
+        defaultSort: converted.defaultSort || sanitizedPrefs.defaultSort,
         _usingFieldIds: true, // Mark as using Field IDs
       }
       
-      localStorage.setItem(`${STORAGE_PREFIX}${tableId}`, JSON.stringify(prefsToSave))
+      localStorage.setItem(`${STORAGE_PREFIX}${sanitizedTableId}`, JSON.stringify(prefsToSave))
       
       // Also save a backup of legacy format for migration reference (first time only)
-      if (!localStorage.getItem(`${STORAGE_PREFIX_LEGACY}${tableId}`)) {
-        localStorage.setItem(`${STORAGE_PREFIX_LEGACY}${tableId}`, JSON.stringify(preferences))
+      if (!localStorage.getItem(`${STORAGE_PREFIX_LEGACY}${sanitizedTableId}`)) {
+        localStorage.setItem(`${STORAGE_PREFIX_LEGACY}${sanitizedTableId}`, JSON.stringify(sanitizedPrefs))
       }
     } else {
       // No mapping available - save as-is (will be migrated when mapping is available)
-      localStorage.setItem(`${STORAGE_PREFIX}${tableId}`, JSON.stringify(preferences))
+      localStorage.setItem(`${STORAGE_PREFIX}${sanitizedTableId}`, JSON.stringify(sanitizedPrefs))
       
       // Try to fetch mapping in background for next time (non-blocking)
-      fetchFieldMapping(tableId).catch(() => {
+      fetchFieldMapping(sanitizedTableId).catch(() => {
         // Silently fail - will try again on next save
       })
     }
   } catch (error) {
     console.error('Error saving table preferences:', error)
+    // Don't throw - gracefully fail to prevent breaking the app
   }
 }
 

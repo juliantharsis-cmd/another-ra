@@ -38,6 +38,18 @@ This folder contains Product Requirements Documents for all key features in the 
    - Theme and appearance preferences
    - Notification and display settings
 
+6. **[Auto-Generated Filters](./PRD_Auto_Generated_Filters.md)**
+   - Automatic filter generation from field configurations
+   - Systematic approach for all tables
+   - Support for linked records and regular fields
+   - Reduces manual configuration by 60-80%
+
+7. **[Persistent Filtering](./PRD_Persistent_Filtering.md)**
+   - User-controlled filter persistence per table
+   - Browser-based storage (localStorage)
+   - Security safeguards (XSS prevention)
+   - Per-user, per-table, per-session isolation
+
 ## Document Structure
 
 Each PRD follows a standardized structure:
