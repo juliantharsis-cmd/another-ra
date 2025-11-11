@@ -336,7 +336,7 @@ export class AirtableService {
         console.log(`   Applying filter formula: ${filterFormula}`)
       }
       
-      // Fetch only the pages we need
+      // Fetch only the pages we need with timeout protection
       await new Promise<void>((resolve, reject) => {
         const selectOptions: any = {
           pageSize: 100, // Airtable's max page size
@@ -350,6 +350,11 @@ export class AirtableService {
         if (filterFormula) {
           selectOptions.filterByFormula = filterFormula
         }
+        
+        // Add timeout to prevent hanging on complex filters or empty results
+        const timeout = setTimeout(() => {
+          reject(new Error('Airtable query timed out. The filter may be too complex or result in no records. Try simplifying your filters.'))
+        }, 25000) // 25 second timeout (slightly less than client timeout)
         
         this.base(this.tableName)
           .select(selectOptions)
@@ -368,6 +373,7 @@ export class AirtableService {
               
               // Stop if we've fetched enough pages
               if (currentPage >= endPage) {
+                clearTimeout(timeout)
                 resolve()
                 return
               }
@@ -375,6 +381,7 @@ export class AirtableService {
               fetchNextPage()
             },
             (err) => {
+              clearTimeout(timeout)
               if (err) {
                 reject(err)
               } else {

@@ -12,7 +12,8 @@
     "create:preferences-table": "tsx src/scripts/createPreferencesTable.ts",
     "update:user-preferences-schema": "tsx src/scripts/updateUserPreferencesTableSchema.ts",
     "cleanup:user-preferences-table": "tsx src/scripts/cleanupUserPreferencesTable.ts",
-    "fetch:table-ids": "tsx ../scripts/fetch-table-ids.ts"
+    "fetch:table-ids": "tsx ../scripts/fetch-table-ids.ts",
+    "create:integration-marketplace-table": "tsx src/scripts/createIntegrationMarketplaceTable.ts"
   },
   "dependencies": {
     "@types/multer": "^2.0.0",

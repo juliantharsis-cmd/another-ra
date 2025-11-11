@@ -14,6 +14,7 @@ import applicationListRoutes from './routes/applicationListRoutes'
 import userTableRoutes from './routes/userTableRoutes'
 import userRolesRoutes from './routes/userRolesRoutes'
 import industryClassificationRoutes from './routes/industryClassificationRoutes'
+import integrationMarketplaceRoutes from './routes/integrationMarketplace'
 
 // Load environment variables FIRST, before any other imports
 // Use explicit path to ensure .env is loaded from server directory
@@ -165,6 +166,7 @@ app.use('/api/application-list', applicationListRoutes)
 app.use('/api/user-roles', userRolesRoutes)
 app.use('/api/industry-classification', industryClassificationRoutes)
 app.use('/api/users', userTableRoutes)
+app.use('/api/integration-marketplace', integrationMarketplaceRoutes)
 
 // 404 handler
 app.use((req: Request, res: Response) => {
