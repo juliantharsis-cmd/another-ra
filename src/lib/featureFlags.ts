@@ -27,6 +27,10 @@ type FeatureFlag =
   | 'columnAutoSizing'
   | 'persistentFiltering'
   | 'industryClassification'
+  | 'welcomeDashboard'
+  | 'aiAssistant'
+  | 'notifications'
+  | 'integrations'
 
 const featureFlags: Record<FeatureFlag, boolean> = {
   tableActionsV2: process.env.NEXT_PUBLIC_FEATURE_TABLE_ACTIONS_V2 === 'true' || true, // Default to true for development
@@ -51,6 +55,10 @@ const featureFlags: Record<FeatureFlag, boolean> = {
   columnAutoSizing: process.env.NEXT_PUBLIC_FEATURE_COLUMN_AUTO_SIZING === 'true' || true, // Default to true (requires columnResizeV2)
   persistentFiltering: process.env.NEXT_PUBLIC_FEATURE_PERSISTENT_FILTERING === 'true' || true, // Default to true
   industryClassification: process.env.NEXT_PUBLIC_FEATURE_INDUSTRY_CLASSIFICATION === 'true' || true, // Default to true
+  welcomeDashboard: process.env.NEXT_PUBLIC_FEATURE_WELCOME_DASHBOARD === 'true' || true, // Default to true
+  aiAssistant: process.env.NEXT_PUBLIC_FEATURE_AI_ASSISTANT === 'true' || true, // Default to true
+  notifications: process.env.NEXT_PUBLIC_FEATURE_NOTIFICATIONS === 'true' || true, // Default to true
+  integrations: process.env.NEXT_PUBLIC_FEATURE_INTEGRATIONS === 'true' || true, // Default to true
 }
 
 /**
@@ -92,6 +100,16 @@ export function setFeatureFlag(flag: FeatureFlag, value: boolean): void {
 export function clearFeatureFlag(flag: FeatureFlag): void {
   if (typeof window === 'undefined') return
   localStorage.removeItem(`featureFlag:${flag}`)
+}
+
+/**
+ * Clear all feature flag overrides from localStorage
+ */
+export function clearAllFeatureFlags(): void {
+  if (typeof window === 'undefined') return
+  Object.keys(featureFlags).forEach((key) => {
+    localStorage.removeItem(`featureFlag:${key}`)
+  })
 }
 
 /**

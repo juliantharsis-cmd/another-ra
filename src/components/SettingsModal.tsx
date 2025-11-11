@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { XMarkIcon } from './icons'
-import { getAllFeatureFlags, isFeatureEnabled, type FeatureFlag, setFeatureFlag, getFeatureFlagOverrides } from '@/lib/featureFlags'
+import { getAllFeatureFlags, isFeatureEnabled, type FeatureFlag, setFeatureFlag, getFeatureFlagOverrides, clearFeatureFlag } from '@/lib/featureFlags'
 import Notification from './Notification'
+import IntegrationMarketplace from './IntegrationMarketplace'
 
 interface FeatureFlagInfo {
   key: FeatureFlag
@@ -68,6 +69,30 @@ const FEATURE_SECTIONS: FeatureSection[] = [
         key: 'persistentFiltering',
         label: 'Persistent Filtering',
         description: 'Enable persistent filtering - filters are saved and restored across browser sessions',
+        section: 'ui',
+      },
+      {
+        key: 'welcomeDashboard',
+        label: 'Welcome Dashboard',
+        description: 'Enable the welcome dashboard screen shown after login',
+        section: 'ui',
+      },
+      {
+        key: 'aiAssistant',
+        label: 'AI Assistant',
+        description: 'Enable the AI Assistant button and analysis features on the welcome dashboard',
+        section: 'ui',
+      },
+      {
+        key: 'notifications',
+        label: 'Notifications',
+        description: 'Enable the notification center with bell icon badge and notification management',
+        section: 'ui',
+      },
+      {
+        key: 'integrations',
+        label: 'AI Integrations',
+        description: 'Enable AI Integration Marketplace for connecting third-party AI services',
         section: 'ui',
       },
     ],
@@ -203,14 +228,129 @@ interface SettingsModalProps {
   onClose: () => void
 }
 
+type PresetMode = 'safe' | 'standard' | 'power' | 'custom'
+
+// Preset configurations
+const PRESET_CONFIGURATIONS: Record<PresetMode, Partial<Record<FeatureFlag, boolean>>> = {
+  safe: {
+    // Essential features only - minimal configuration for recovery
+    companies: true,
+    geography: true,
+    applicationList: true,
+    settingsModal: true,
+    userPreferences: true,
+    // Disable all advanced/experimental features
+    tableActionsV2: false,
+    columnResizeV2: false,
+    columnAutoSizing: false,
+    detailPanelLayout: false,
+    loadingProgressBar: false,
+    persistentFiltering: false,
+    welcomeDashboard: false,
+    aiAssistant: false,
+    notifications: false,
+    integrations: false,
+    tableVirtualScrolling: false,
+    tablePrefetching: false,
+    tableDataCaching: false,
+    userManagement: false,
+    userRoles: false,
+    emissionFactorGwp: false,
+    emissionFactorVersion: false,
+    ghgTypes: false,
+    industryClassification: false,
+    tableConfiguration: false,
+  },
+  standard: {
+    // Balanced configuration - most common features enabled
+    companies: true,
+    geography: true,
+    applicationList: true,
+    settingsModal: true,
+    userPreferences: true,
+    tableActionsV2: true,
+    columnResizeV2: true,
+    columnAutoSizing: true,
+    detailPanelLayout: true,
+    loadingProgressBar: true,
+    persistentFiltering: true,
+    tablePrefetching: true,
+    tableDataCaching: true,
+    userManagement: true,
+    userRoles: true,
+    emissionFactorGwp: true,
+    emissionFactorVersion: true,
+    ghgTypes: true,
+    industryClassification: true,
+    tableConfiguration: true,
+    notifications: true,
+    // Disable experimental/advanced features
+    welcomeDashboard: false,
+    aiAssistant: false,
+    integrations: true,
+    tableVirtualScrolling: false,
+  },
+  power: {
+    // All features enabled - maximum functionality
+    companies: true,
+    geography: true,
+    applicationList: true,
+    settingsModal: true,
+    userPreferences: true,
+    tableActionsV2: true,
+    columnResizeV2: true,
+    columnAutoSizing: true,
+    detailPanelLayout: true,
+    loadingProgressBar: true,
+    persistentFiltering: true,
+    welcomeDashboard: true,
+    aiAssistant: true,
+    notifications: true,
+    integrations: true,
+    tableVirtualScrolling: true,
+    tablePrefetching: true,
+    tableDataCaching: true,
+    userManagement: true,
+    userRoles: true,
+    emissionFactorGwp: true,
+    emissionFactorVersion: true,
+    ghgTypes: true,
+    industryClassification: true,
+    tableConfiguration: true,
+  },
+  custom: {}, // Custom mode - no preset applied
+}
+
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const [activeTab, setActiveTab] = useState<'features' | 'integrations'>('features')
   const [featureFlags, setFeatureFlags] = useState<Record<FeatureFlag, boolean>>({} as Record<FeatureFlag, boolean>)
   const [hasChanges, setHasChanges] = useState(false)
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
+  const [currentPreset, setCurrentPreset] = useState<PresetMode>('custom')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
     // Initialize with default expanded sections
     return new Set(FEATURE_SECTIONS.filter(s => s.defaultExpanded).map(s => s.id))
   })
+
+  // Detect current preset mode based on feature flags
+  const detectPresetMode = (flags: Record<FeatureFlag, boolean>): PresetMode => {
+    // Check if flags match a preset
+    for (const [preset, config] of Object.entries(PRESET_CONFIGURATIONS)) {
+      if (preset === 'custom') continue
+      
+      let matches = true
+      for (const [key, value] of Object.entries(config)) {
+        if (flags[key as FeatureFlag] !== value) {
+          matches = false
+          break
+        }
+      }
+      if (matches) {
+        return preset as PresetMode
+      }
+    }
+    return 'custom'
+  }
 
   // Load current feature flags
   useEffect(() => {
@@ -218,16 +358,39 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const currentFlags = getAllFeatureFlags()
       setFeatureFlags(currentFlags)
       setHasChanges(false)
+      setCurrentPreset(detectPresetMode(currentFlags))
     }
   }, [isOpen])
 
   // Handle toggle
   const handleToggle = (flag: FeatureFlag) => {
     const newValue = !featureFlags[flag]
-    setFeatureFlags(prev => ({
-      ...prev,
+    const updatedFlags = {
+      ...featureFlags,
       [flag]: newValue,
-    }))
+    }
+    setFeatureFlags(updatedFlags)
+    setHasChanges(true)
+    setCurrentPreset(detectPresetMode(updatedFlags))
+  }
+
+  // Handle preset selection
+  const handlePresetSelect = (preset: PresetMode) => {
+    if (preset === 'custom') {
+      setCurrentPreset('custom')
+      return
+    }
+
+    const presetConfig = PRESET_CONFIGURATIONS[preset]
+    const updatedFlags = { ...featureFlags }
+    
+    // Apply preset configuration
+    Object.entries(presetConfig).forEach(([key, value]) => {
+      updatedFlags[key as FeatureFlag] = value
+    })
+    
+    setFeatureFlags(updatedFlags)
+    setCurrentPreset(preset)
     setHasChanges(true)
   }
 
@@ -343,8 +506,35 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </button>
           </div>
 
+          {/* Tabs */}
+          <div className="flex border-b border-neutral-200">
+            <button
+              onClick={() => setActiveTab('features')}
+              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'features'
+                  ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                  : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+              }`}
+            >
+              Feature Flags
+            </button>
+            {isFeatureEnabled('integrations') && (
+              <button
+                onClick={() => setActiveTab('integrations')}
+                className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                  activeTab === 'integrations'
+                    ? 'text-green-600 border-b-2 border-green-600 bg-green-50'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
+                }`}
+              >
+                Integrations
+              </button>
+            )}
+          </div>
+
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
+            {activeTab === 'features' ? (
             <div className="space-y-4">
               {/* Header Actions */}
               <div className="flex items-center justify-between mb-6">
@@ -362,6 +552,75 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 >
                   Reset to Defaults
                 </button>
+              </div>
+
+              {/* Preset Configurations */}
+              <div className="mb-6">
+                <h4 className="text-xs font-semibold text-neutral-700 mb-3">Quick Configuration Presets</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Safe Mode / Recovery Mode */}
+                  <button
+                    onClick={() => handlePresetSelect('safe')}
+                    className={`relative p-3 rounded-lg border-2 transition-all text-left ${
+                      currentPreset === 'safe'
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-neutral-200 bg-white hover:border-green-300 hover:bg-green-50/50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-1.5">
+                      <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      {currentPreset === 'safe' && (
+                        <span className="text-[10px] px-2 py-0.5 bg-green-600 text-white rounded-full font-medium">Active</span>
+                      )}
+                    </div>
+                    <h5 className="text-xs font-semibold text-neutral-900 mb-0.5">Safe Mode</h5>
+                    <p className="text-[10px] text-neutral-600 leading-tight">Essential features only for recovery and troubleshooting</p>
+                  </button>
+
+                  {/* Standard Experience */}
+                  <button
+                    onClick={() => handlePresetSelect('standard')}
+                    className={`relative p-3 rounded-lg border-2 transition-all text-left ${
+                      currentPreset === 'standard'
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-neutral-200 bg-white hover:border-green-300 hover:bg-green-50/50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-1.5">
+                      <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                      </svg>
+                      {currentPreset === 'standard' && (
+                        <span className="text-[10px] px-2 py-0.5 bg-green-600 text-white rounded-full font-medium">Active</span>
+                      )}
+                    </div>
+                    <h5 className="text-xs font-semibold text-neutral-900 mb-0.5">Standard Experience</h5>
+                    <p className="text-[10px] text-neutral-600 leading-tight">Balanced configuration with common features enabled</p>
+                  </button>
+
+                  {/* SARA on Steroids */}
+                  <button
+                    onClick={() => handlePresetSelect('power')}
+                    className={`relative p-3 rounded-lg border-2 transition-all text-left ${
+                      currentPreset === 'power'
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-neutral-200 bg-white hover:border-green-300 hover:bg-green-50/50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-1.5">
+                      <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      {currentPreset === 'power' && (
+                        <span className="text-[10px] px-2 py-0.5 bg-green-600 text-white rounded-full font-medium">Active</span>
+                      )}
+                    </div>
+                    <h5 className="text-xs font-semibold text-neutral-900 mb-0.5">SARA on Steroids</h5>
+                    <p className="text-[10px] text-neutral-600 leading-tight">All features enabled for maximum functionality</p>
+                  </button>
+                </div>
               </div>
 
               {/* Feature Flags by Section (Collapsible) */}
@@ -390,18 +649,18 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                         <div className="text-left">
-                          <h4 className="text-sm font-semibold text-neutral-900">
+                          <h4 className="text-xs font-semibold text-neutral-900">
                             {section.title}
                           </h4>
                           {section.description && (
-                            <p className="text-xs text-neutral-500 mt-0.5">
+                            <p className="text-[10px] text-neutral-500 mt-0.5">
                               {section.description}
                             </p>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-[10px] text-neutral-500">
                           {enabledCount}/{totalCount} enabled
                         </span>
                         <svg
@@ -427,11 +686,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             >
                               <div className="flex-1 mr-4">
                                 <div className="flex items-center space-x-2 mb-1">
-                                  <h5 className="text-sm font-medium text-neutral-900">
+                                  <h5 className="text-xs font-medium text-neutral-900">
                                     {info.label}
                                   </h5>
                                   <span
-                                    className={`text-xs px-2 py-0.5 rounded font-medium ${
+                                    className={`text-[10px] px-2 py-0.5 rounded font-medium ${
                                       isEnabled
                                         ? 'bg-green-100 text-green-700'
                                         : 'bg-neutral-100 text-neutral-600'
@@ -440,7 +699,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                     {isEnabled ? 'Enabled' : 'Disabled'}
                                   </span>
                                 </div>
-                                <p className="text-xs text-neutral-500">
+                                <p className="text-[10px] text-neutral-500">
                                   {info.description}
                                 </p>
                               </div>
@@ -462,6 +721,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 )
               })}
             </div>
+            ) : (
+              <IntegrationMarketplace />
+            )}
           </div>
 
           {/* Footer */}

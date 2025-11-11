@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { applicationListApi, ApplicationList } from '@/lib/api/applicationList'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons'
 import WelcomeDashboard from '@/components/WelcomeDashboard'
+import { isFeatureEnabled } from '@/lib/featureFlags'
 
 interface SpaceCard {
   id: string
@@ -225,14 +226,15 @@ export default function Home() {
   useEffect(() => {
     const loggedIn = localStorage.getItem('another_ra_logged_in') === 'true'
     const dontShowWelcome = localStorage.getItem('another_ra_dont_show_welcome') === 'true'
+    const isWelcomeDashboardEnabled = isFeatureEnabled('welcomeDashboard')
     
     if (loggedIn) {
       setIsLoggedIn(true)
       setShowLoginForm(false)
       loadSpaceCards()
       
-      // Show welcome dashboard if not disabled
-      if (!dontShowWelcome) {
+      // Show welcome dashboard only if feature is enabled and user hasn't disabled it
+      if (isWelcomeDashboardEnabled && !dontShowWelcome) {
         setShowWelcomeDashboard(true)
       } else {
         setShowCards(true)
@@ -258,10 +260,13 @@ export default function Home() {
     // Load space cards in the background
     loadSpaceCards().catch(console.error)
 
+    // Check if welcome dashboard feature is enabled
+    const isWelcomeDashboardEnabled = isFeatureEnabled('welcomeDashboard')
+    
     // Check if user wants to skip welcome dashboard
     const dontShowWelcome = localStorage.getItem('another_ra_dont_show_welcome') === 'true'
     
-    if (dontShowWelcome) {
+    if (!isWelcomeDashboardEnabled || dontShowWelcome) {
       // Skip welcome dashboard, go directly to space selector
       setTimeout(() => {
         setShowCards(true)
@@ -372,7 +377,7 @@ export default function Home() {
         )}
 
         {/* Welcome Dashboard - fade in after login */}
-        {showWelcomeDashboard && (
+        {showWelcomeDashboard && isFeatureEnabled('welcomeDashboard') && (
           <WelcomeDashboard
             username={localStorage.getItem('another_ra_username') || loginForm.username || 'User'}
             onNext={handleWelcomeNext}

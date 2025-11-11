@@ -20,9 +20,11 @@ import {
   BellIcon,
   UserIcon,
 } from './icons'
-import { isFeatureEnabled } from '@/lib/featureFlags'
+import { isFeatureEnabled, getAllFeatureFlags } from '@/lib/featureFlags'
 import SettingsModal from './SettingsModal'
 import UserPreferencesModal from './UserPreferencesModal'
+import NotificationCenter from './NotificationCenter'
+import { useNotifications } from '@/contexts/NotificationContext'
 
 interface NavItem {
   name: string
@@ -32,50 +34,106 @@ interface NavItem {
   children?: NavItem[]
 }
 
-const getNavItems = (): NavItem[] => [
+// Helper function to get nav items - accepts feature flags to avoid hydration mismatch
+const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
   { name: 'Home Space', Icon: HomeIcon, path: '/' },
   {
     name: 'Organization structure',
     Icon: FolderIcon,
     children: [
-      ...(isFeatureEnabled('geography') ? [{ name: 'Geography', Icon: GlobeIcon, path: '/spaces/system-config/geography' }] : []),
-      ...(isFeatureEnabled('companies') ? [{ name: 'Companies', Icon: BuildingIcon, path: '/spaces/system-config/companies', badge: 2 }] : []),
+      ...(featureFlags.geography ? [{ name: 'Geography', Icon: GlobeIcon, path: '/spaces/system-config/geography' }] : []),
+      ...(featureFlags.companies ? [{ name: 'Companies', Icon: BuildingIcon, path: '/spaces/system-config/companies' }] : []),
     ],
   },
-  ...(isFeatureEnabled('userManagement') ? [{
+  ...(featureFlags.userManagement ? [{
     name: 'User management',
     Icon: UserIcon,
     children: [
       { name: 'Users', Icon: UserIcon, path: '/spaces/user-management/users' },
-      ...(isFeatureEnabled('userRoles') ? [{ name: 'User Roles', Icon: UserIcon, path: '/spaces/system-config/user-roles' }] : []),
+      ...(featureFlags.userRoles ? [{ name: 'User Roles', Icon: UserIcon, path: '/spaces/system-config/user-roles' }] : []),
     ],
   }] : []),
   {
     name: 'Emission management',
     Icon: LeafIcon,
     children: [
-      ...(isFeatureEnabled('emissionFactorGwp') ? [{ name: 'Emission Factor GWP', Icon: ChartIcon, path: '/spaces/emission-management/emission-factors' }] : []),
-      ...(isFeatureEnabled('emissionFactorVersion') ? [{ name: 'Emission Factor Version', Icon: ChartIcon, path: '/spaces/emission-management/emission-factor-version' }] : []),
-      ...(isFeatureEnabled('ghgTypes') ? [{ name: 'GHG Type', Icon: ChartIcon, path: '/spaces/emission-management/ghg-types' }] : []),
-      ...(isFeatureEnabled('industryClassification') ? [{ name: 'Industry Factors', Icon: ChartIcon, path: '/spaces/emission-management/industry-classification' }] : []),
+      ...(featureFlags.emissionFactorGwp ? [{ name: 'Emission Factor GWP', Icon: ChartIcon, path: '/spaces/emission-management/emission-factors' }] : []),
+      ...(featureFlags.emissionFactorVersion ? [{ name: 'Emission Factor Version', Icon: ChartIcon, path: '/spaces/emission-management/emission-factor-version' }] : []),
+      ...(featureFlags.ghgTypes ? [{ name: 'GHG Type', Icon: ChartIcon, path: '/spaces/emission-management/ghg-types' }] : []),
+      ...(featureFlags.industryClassification ? [{ name: 'Industry Factors', Icon: ChartIcon, path: '/spaces/emission-management/industry-classification' }] : []),
     ],
   },
   { name: 'Sustainability Actions', Icon: LeafIcon, path: '/spaces/system-config/sustainability' },
-  ...(isFeatureEnabled('applicationList') ? [{ name: 'Application Settings', Icon: SettingsIcon, path: '/spaces/admin/application-list' }] : []),
+  ...(featureFlags.applicationList ? [{
+    name: 'Application Settings',
+    Icon: SettingsIcon,
+    children: [
+      { name: 'Application List', Icon: SettingsIcon, path: '/spaces/admin/application-list' },
+      ...(featureFlags.integrations ? [{ name: 'Integrations', Icon: SettingsIcon, path: '/spaces/system-config/integration-marketplace' }] : []),
+    ],
+  }] : []),
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Organization structure', 'User management', 'Emission management'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Organization structure', 'User management', 'Emission management', 'Application Settings'])
   const [isMounted, setIsMounted] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUserPreferencesOpen, setIsUserPreferencesOpen] = useState(false)
+  const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false)
+  const { unreadCount } = useNotifications()
   const [shouldAnimateIn, setShouldAnimateIn] = useState(false)
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
   const [hoveredItemPosition, setHoveredItemPosition] = useState<number | null>(null)
   const { isCollapsed, toggleCollapse } = useSidebar()
-  const navItems = getNavItems()
+  
+  // Get feature flags - use consistent defaults to avoid hydration mismatch
+  // Load from localStorage only after mount
+  // Initialize with all flags as true (defaults) to match server render
+  // This ensures server and client render the same initial HTML
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>(() => {
+    // Return default values on server (no localStorage access)
+    // These match the defaults in featureFlags.ts where most flags default to true
+    // Safe mode will update these after mount via useEffect
+    if (typeof window === 'undefined') {
+      return {
+        geography: true,
+        companies: true,
+        userManagement: true,
+        userRoles: true,
+        emissionFactorGwp: true,
+        emissionFactorVersion: true,
+        ghgTypes: true,
+        industryClassification: true,
+        applicationList: true,
+      }
+    }
+    // On client, still use defaults initially to match server
+    // Will be updated in useEffect
+    return {
+      geography: true,
+      companies: true,
+      userManagement: true,
+      userRoles: true,
+      emissionFactorGwp: true,
+      emissionFactorVersion: true,
+      ghgTypes: true,
+      industryClassification: true,
+      applicationList: true,
+    }
+  })
+  
+  // Load actual feature flags from localStorage after mount (client-side only)
+  // This ensures hydration matches, then updates to reflect user's feature flag settings
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const allFlags = getAllFeatureFlags()
+      setFeatureFlags(allFlags)
+    }
+  }, [])
+  
+  const navItems = getNavItems(featureFlags)
 
   // Check if we're transitioning from home page (only animate on initial entry)
   useEffect(() => {
@@ -290,7 +348,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3">
+      <nav className="flex-1 overflow-y-auto py-3 scrollbar-hide">
         {/* Expand/Collapse Button - positioned above Home Space icon */}
         <button
           onClick={toggleCollapse}
@@ -334,9 +392,20 @@ export default function Sidebar() {
             <button className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" title="Share">
               <ShareIcon className="w-5 h-5" />
             </button>
-            <button className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" title="Notifications">
-              <BellIcon className="w-5 h-5" />
-            </button>
+            {isFeatureEnabled('notifications') && (
+              <button 
+                onClick={() => setIsNotificationCenterOpen(true)}
+                className="relative p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
+                title="Notifications"
+              >
+                <BellIcon className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[10px] font-semibold text-white bg-green-600 rounded-full">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button 
               onClick={() => setIsSettingsOpen(true)}
               className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
@@ -351,9 +420,20 @@ export default function Sidebar() {
             <button className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" title="Share">
               <ShareIcon className="w-5 h-5" />
             </button>
-            <button className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" title="Notifications">
-              <BellIcon className="w-5 h-5" />
-            </button>
+            {isFeatureEnabled('notifications') && (
+              <button 
+                onClick={() => setIsNotificationCenterOpen(true)}
+                className="relative p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
+                title="Notifications"
+              >
+                <BellIcon className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[10px] font-semibold text-white bg-green-600 rounded-full">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button 
               onClick={() => setIsSettingsOpen(true)}
               className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
@@ -378,6 +458,14 @@ export default function Sidebar() {
         <UserPreferencesModal
           isOpen={isUserPreferencesOpen}
           onClose={() => setIsUserPreferencesOpen(false)}
+        />
+      )}
+
+      {/* Notification Center */}
+      {isFeatureEnabled('notifications') && (
+        <NotificationCenter
+          isOpen={isNotificationCenterOpen}
+          onClose={() => setIsNotificationCenterOpen(false)}
         />
       )}
       </div>

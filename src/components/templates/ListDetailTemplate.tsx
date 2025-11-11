@@ -79,11 +79,42 @@ export default function ListDetailTemplate<T extends { id: string }>({
     setIsMounted(true)
   }, [])
   
-  // Feature flags - declare early so they can be used in useEffect hooks
-  const isTableConfigurationEnabled = isFeatureEnabled('tableConfiguration')
-  const isDetailPanelLayoutEnabled = isFeatureEnabled('detailPanelLayout')
-  const isLoadingProgressBarEnabled = isFeatureEnabled('loadingProgressBar')
-  const isColumnAutoSizingEnabled = isFeatureEnabled('columnAutoSizing')
+  // Feature flags - memoize to avoid repeated localStorage access during renders
+  // Use useMemo to ensure feature flags are only computed once per render cycle
+  const featureFlags = useMemo(() => {
+    if (typeof window === 'undefined') {
+      // Return defaults on server to avoid hydration mismatch
+      return {
+        tableConfiguration: true,
+        detailPanelLayout: true,
+        loadingProgressBar: true,
+        columnAutoSizing: true,
+        tableVirtualScrolling: process.env.NODE_ENV === 'development',
+        tablePrefetching: true,
+        tableDataCaching: true,
+        tableActionsV2: true,
+        persistentFiltering: true,
+        columnResizeV2: true,
+      }
+    }
+    return {
+      tableConfiguration: isFeatureEnabled('tableConfiguration'),
+      detailPanelLayout: isFeatureEnabled('detailPanelLayout'),
+      loadingProgressBar: isFeatureEnabled('loadingProgressBar'),
+      columnAutoSizing: isFeatureEnabled('columnAutoSizing'),
+      tableVirtualScrolling: isFeatureEnabled('tableVirtualScrolling'),
+      tablePrefetching: isFeatureEnabled('tablePrefetching'),
+      tableDataCaching: isFeatureEnabled('tableDataCaching'),
+      tableActionsV2: isFeatureEnabled('tableActionsV2'),
+      persistentFiltering: isFeatureEnabled('persistentFiltering'),
+      columnResizeV2: isFeatureEnabled('columnResizeV2'),
+    }
+  }, []) // Empty deps - only compute once on mount
+  
+  const isTableConfigurationEnabled = featureFlags.tableConfiguration
+  const isDetailPanelLayoutEnabled = featureFlags.detailPanelLayout
+  const isLoadingProgressBarEnabled = featureFlags.loadingProgressBar
+  const isColumnAutoSizingEnabled = featureFlags.columnAutoSizing
   
   // Delay showing loading indicator to avoid flash for quick loads (only if feature enabled)
   useEffect(() => {
@@ -112,17 +143,30 @@ export default function ListDetailTemplate<T extends { id: string }>({
   }, [isLoading, isLoadingProgressBarEnabled])
 
   // Pagination state - use user default with per-table override support
-  const effectiveDefaultPageSize = getPageSize(entityNamePlural, userDefaultPageSize || configDefaultPageSize || 25)
+  // Initialize with consistent default to avoid hydration mismatch (load from localStorage in useEffect)
+  const defaultPageSize = userDefaultPageSize || configDefaultPageSize || 25
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(effectiveDefaultPageSize)
+  const [pageSize, setPageSize] = useState(defaultPageSize)
+
+  // Load pageSize from localStorage after mount (client-side only) to avoid hydration mismatch
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedPageSize = getPageSize(entityNamePlural, defaultPageSize)
+      if (storedPageSize !== defaultPageSize) {
+        setPageSize(storedPageSize)
+      }
+    }
+  }, [entityNamePlural, defaultPageSize])
 
   // Update pageSize when user preferences change (but not if user has set a per-table override)
   useEffect(() => {
     if (!prefsLoading && userDefaultPageSize) {
-      const currentTablePageSize = getTablePreferences(entityNamePlural)?.pageSize
-      // Only update if no per-table override exists
-      if (!currentTablePageSize) {
-        setPageSize(userDefaultPageSize)
+      if (typeof window !== 'undefined') {
+        const currentTablePageSize = getTablePreferences(entityNamePlural)?.pageSize
+        // Only update if no per-table override exists
+        if (!currentTablePageSize) {
+          setPageSize(userDefaultPageSize)
+        }
       }
     }
   }, [prefsLoading, userDefaultPageSize, entityNamePlural])
@@ -131,7 +175,10 @@ export default function ListDetailTemplate<T extends { id: string }>({
   const [pageSizeChangeTrigger, setPageSizeChangeTrigger] = useState(0)
   
   // Compute whether to show reset icon (memoized to avoid unnecessary re-renders)
+  // Only access localStorage on client-side to avoid hydration mismatch
   const shouldShowResetIcon = useMemo(() => {
+    if (typeof window === 'undefined') return false // Return false on server to avoid hydration mismatch
+    
     const tablePrefs = getTablePreferences(entityNamePlural)
     const storedPageSize = tablePrefs?.pageSize
     const effectiveDefault = !prefsLoading && userDefaultPageSize 
@@ -151,10 +198,10 @@ export default function ListDetailTemplate<T extends { id: string }>({
   // Prefetch cache for next page
   const prefetchCacheRef = useRef<Map<string, T[]>>(new Map())
   
-  // Virtual scrolling feature flag
-  const isVirtualScrollingEnabled = isFeatureEnabled('tableVirtualScrolling')
-  const isPrefetchingEnabled = isFeatureEnabled('tablePrefetching')
-  const isDataCachingEnabled = isFeatureEnabled('tableDataCaching')
+  // Virtual scrolling feature flags (from memoized featureFlags above)
+  const isVirtualScrollingEnabled = featureFlags.tableVirtualScrolling
+  const isPrefetchingEnabled = featureFlags.tablePrefetching
+  const isDataCachingEnabled = featureFlags.tableDataCaching
   
   // Virtual scrolling threshold (from env or default to 100)
   const virtualScrollThreshold = parseInt(
@@ -168,9 +215,9 @@ export default function ListDetailTemplate<T extends { id: string }>({
     10
   )
 
-  // Feature flag check - must be defined before useState initializers that use it
-  const isTableActionsV2Enabled = isFeatureEnabled('tableActionsV2')
-  const isPersistentFilteringEnabled = isFeatureEnabled('persistentFiltering')
+  // Feature flags (from memoized featureFlags above)
+  const isTableActionsV2Enabled = featureFlags.tableActionsV2
+  const isPersistentFilteringEnabled = featureFlags.persistentFiltering
 
   // Filter and sort state
   const [searchQuery, setSearchQuery] = useState('')
@@ -279,9 +326,21 @@ export default function ListDetailTemplate<T extends { id: string }>({
   // Search suggestions
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
 
-  // Column visibility - load from preferences if feature enabled
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
-    if (isTableActionsV2Enabled) {
+  // Column visibility - initialize with all visible to avoid hydration mismatch
+  // Load from preferences in useEffect after mount (client-side only)
+  const defaultColumnVisibility = useMemo(() => {
+    const visibility: Record<string, boolean> = {}
+    columns.forEach(col => {
+      visibility[col.key] = true
+    })
+    return visibility
+  }, [columns])
+  
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(defaultColumnVisibility)
+  
+  // Load column visibility from localStorage after mount (client-side only)
+  useEffect(() => {
+    if (isTableActionsV2Enabled && typeof window !== 'undefined') {
       const prefs = getTablePreferences(entityNamePlural)
       if (prefs?.columnVisibility) {
         // Merge with defaults
@@ -289,15 +348,10 @@ export default function ListDetailTemplate<T extends { id: string }>({
         columns.forEach(col => {
           visibility[col.key] = prefs.columnVisibility[col.key] ?? true
         })
-        return visibility
+        setColumnVisibility(visibility)
       }
     }
-    const visibility: Record<string, boolean> = {}
-    columns.forEach(col => {
-      visibility[col.key] = true
-    })
-    return visibility
-  })
+  }, [isTableActionsV2Enabled, entityNamePlural, columns])
   
   // Track column order changes to trigger re-render
   const [columnOrderKey, setColumnOrderKey] = useState(0)
@@ -397,8 +451,10 @@ export default function ListDetailTemplate<T extends { id: string }>({
     })
     
     // Get column visibility and order preferences (stored in localStorage)
-    const prefs = getTablePreferences(entityNamePlural)
-    const visibility = prefs?.columnVisibility || {}
+    // Use columnVisibility state instead of calling getTablePreferences directly to avoid hydration mismatch
+    // Only access localStorage for column order (which doesn't affect initial render)
+    const prefs = typeof window !== 'undefined' ? getTablePreferences(entityNamePlural) : null
+    const visibility = columnVisibility // Use state instead of localStorage directly
     
     // Start with all columns from config (list view)
     const allColumnsMap = new Map(columns.map(col => [col.key, col]))
@@ -746,16 +802,22 @@ export default function ListDetailTemplate<T extends { id: string }>({
     return visibleResult
   }, [columns, fields, columnOrderKey, entityNamePlural, columnVisibility, tableConfiguration?.fields, configRefreshKey])
 
-  // Column resizing - check feature flag
-  const isColumnResizeV2Enabled = isFeatureEnabled('columnResizeV2')
+  // Column resizing feature flag (from memoized featureFlags above)
+  const isColumnResizeV2Enabled = featureFlags.columnResizeV2
   
   // List mode for column width persistence
-  const [listMode, setListModeState] = useState<ListMode>(() => {
-    if (isColumnResizeV2Enabled) {
-      return getListMode(entityNamePlural)
+  // Initialize with consistent default to avoid hydration mismatch (load from localStorage in useEffect)
+  const [listMode, setListModeState] = useState<ListMode>('comfortable')
+  
+  // Load listMode from localStorage after mount (client-side only)
+  useEffect(() => {
+    if (isColumnResizeV2Enabled && typeof window !== 'undefined') {
+      const storedListMode = getListMode(entityNamePlural)
+      if (storedListMode !== 'comfortable') {
+        setListModeState(storedListMode)
+      }
     }
-    return 'comfortable'
-  })
+  }, [entityNamePlural, isColumnResizeV2Enabled])
 
   // Column widths - load from preferences and manage resizing (after configuredColumns)
   const visibleColumnKeys = useMemo(() => 

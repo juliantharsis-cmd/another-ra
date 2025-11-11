@@ -106,23 +106,30 @@ class CompaniesApiClient {
 
         const url = `${this.baseUrl}?${queryParams.toString()}`
         
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: AbortSignal.timeout(30000), // 30 second timeout for large datasets
-        })
+        // Create abort controller for better timeout handling
+        const abortController = new AbortController()
+        const timeoutId = setTimeout(() => abortController.abort(), 30000) // 30 second timeout
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
-        }
+        try {
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            signal: abortController.signal,
+          })
 
-        const result: ApiResponse<Company[]> = await response.json()
+          clearTimeout(timeoutId)
 
-        if (!result.success || !result.data) {
-          throw new Error(result.error || 'Failed to fetch companies')
-        }
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
+          }
+
+          const result: ApiResponse<Company[]> = await response.json()
+
+          if (!result.success || !result.data) {
+            throw new Error(result.error || 'Failed to fetch companies')
+          }
 
         return {
           data: result.data,
@@ -133,9 +140,23 @@ class CompaniesApiClient {
             hasMore: false,
           },
         }
+        } catch (fetchError) {
+          clearTimeout(timeoutId)
+          throw fetchError
+        }
       } catch (error) {
         lastError = error as Error
         console.error(`Attempt ${attempt}/${maxRetries} failed:`, error)
+        
+        // Handle timeout/abort errors with better messaging
+        if ((error as any).name === 'AbortError' || (error as Error).message.includes('timeout')) {
+          const isFiltered = params.status || params.primaryIndustry || params.primaryActivity || params.search
+          if (isFiltered) {
+            throw new Error('The filter query took too long to process. This may happen when filters result in no records. Try simplifying your filters or check if the filter values exist in the data.')
+          } else {
+            throw new Error('Request timed out. The server may be processing a large dataset. Please try again or contact support if the issue persists.')
+          }
+        }
         
         // If it's a connection error and we have retries left, wait and retry
         if (attempt < maxRetries && (error instanceof TypeError || (error as any).name === 'AbortError')) {

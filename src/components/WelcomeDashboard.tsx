@@ -2,6 +2,164 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { AIAssistantIcon, OverviewIcon, TrendIcon, RecommendationsIcon } from './icons'
+import { isFeatureEnabled } from '@/lib/featureFlags'
+
+interface BlurOverlayProps {
+  currentKpiIndex: number
+}
+
+function BlurOverlay({ currentKpiIndex }: BlurOverlayProps) {
+  return (
+    <div 
+      className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm animate-smooth-fade-in"
+      style={{
+        transition: 'opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), backdrop-filter 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+    />
+  )
+}
+
+interface SpeechBubbleProps {
+  currentKpiIndex: number
+  displayedText: string
+  isTyping: boolean
+  currentKpiIndexTotal: number
+  onSkip: () => void
+  onNext: () => void
+  textContainerRef: React.RefObject<HTMLDivElement>
+}
+
+function SpeechBubble({ currentKpiIndex, displayedText, isTyping, currentKpiIndexTotal, onSkip, onNext, textContainerRef }: SpeechBubbleProps) {
+  const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number; opacity: number } | null>(null)
+  const isPositionedRef = useRef(false)
+  const bubbleRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Find the highlighted KPI card and position bubble above it
+    const updatePosition = () => {
+      const highlightedCard = document.querySelector(`[data-kpi-index="${currentKpiIndex}"]`) as HTMLElement
+      if (highlightedCard) {
+        const rect = highlightedCard.getBoundingClientRect()
+        const bubbleHeight = 250 // Approximate bubble height
+        const newTop = Math.max(20, rect.top - bubbleHeight - 20) // 20px gap above card, min 20px from top
+        const newLeft = rect.left + rect.width / 2 // Center above card
+        
+        // If this is the first time positioning, set opacity to 0 first, then fade in
+        if (!isPositionedRef.current) {
+          setBubblePosition({
+            top: newTop,
+            left: newLeft,
+            opacity: 0,
+          })
+          isPositionedRef.current = true
+          // Small delay to ensure position is applied before fade
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setBubblePosition(prev => prev ? {
+                ...prev,
+                opacity: 1,
+              } : {
+                top: newTop,
+                left: newLeft,
+                opacity: 1,
+              })
+            })
+          })
+        } else {
+          // For subsequent positions, just update the position smoothly (opacity stays 1)
+          // This will trigger the CSS transition to slide horizontally
+          setBubblePosition(prev => ({
+            top: newTop,
+            left: newLeft,
+            opacity: prev?.opacity ?? 1,
+          }))
+        }
+      }
+    }
+
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      updatePosition()
+    }, 50)
+
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition)
+    
+    return () => {
+      clearTimeout(timeoutId)
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition)
+    }
+  }, [currentKpiIndex])
+
+  if (!bubblePosition) {
+    return null
+  }
+
+  return (
+    <div 
+      ref={bubbleRef}
+      className="fixed z-[101]"
+      style={{
+        top: `${bubblePosition.top}px`,
+        left: `${bubblePosition.left}px`,
+        transform: 'translate(-50%, 0)',
+        opacity: bubblePosition.opacity,
+        transition: 'opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), top 0.7s cubic-bezier(0.4, 0, 0.2, 1), left 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-[400px] max-h-[250px] flex flex-col relative animate-smooth-fade-in">
+        {/* Speech bubble tail pointing down */}
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-white"></div>
+        
+        {/* Header */}
+        <p className="text-sm font-medium text-teal-600 mb-3 flex items-center gap-2 flex-shrink-0">
+          <AIAssistantIcon className="w-4 h-4" />
+          AI Analysis
+        </p>
+        
+        {/* Scrollable text content - accumulates all text */}
+        <div 
+          ref={textContainerRef}
+          className="text-neutral-800 leading-relaxed flex-1 overflow-y-auto pr-2 min-h-[100px] max-h-[150px] custom-scrollbar"
+          onScroll={(e) => {
+            // Auto-scroll to bottom when new text is being typed, but allow manual scrolling
+            const container = e.currentTarget
+            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50
+            if (isTyping && isNearBottom) {
+              setTimeout(() => {
+                container.scrollTop = container.scrollHeight
+              }, 0)
+            }
+          }}
+        >
+          <div className="text-sm">
+            <p className="whitespace-pre-wrap">{displayedText}</p>
+            {isTyping && (
+              <span className="inline-block w-0.5 h-4 bg-teal-600 ml-1 animate-pulse align-middle">|</span>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation buttons */}
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-200 flex-shrink-0">
+          <button
+            onClick={onSkip}
+            className="px-4 py-2 text-sm text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100 rounded-lg transition-colors"
+          >
+            Skip Analysis
+          </button>
+          <button
+            onClick={onNext}
+            className="px-6 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            {currentKpiIndex >= currentKpiIndexTotal - 1 ? 'Done' : 'Next KPI →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface KPICardProps {
   title: string
@@ -59,20 +217,21 @@ function KPICard({ title, value, unit = '', delay = 0, duration = 2000, isHighli
   return (
     <div 
       ref={cardRef}
-      className={`bg-white rounded-lg shadow-md overflow-hidden w-72 flex-shrink-0 transition-all duration-500 ${
+      className={`bg-white rounded-lg shadow-md overflow-hidden w-72 flex-shrink-0 transition-all duration-700 ease-in-out ${
         isHighlighted 
-          ? 'ring-4 ring-teal-500 ring-offset-4 scale-105 z-50 shadow-2xl' 
-          : 'opacity-30 scale-95'
+          ? 'ring-4 ring-teal-500 ring-offset-4 scale-110 z-[110] shadow-2xl opacity-100' 
+          : 'opacity-40 scale-95 z-10'
       }`}
       style={{
         animation: isHighlighted ? 'none' : 'slide-down-fade-in 0.6s ease-out',
         animationFillMode: 'both',
         animationDelay: `${delay}ms`,
+        transition: 'all 0.7s cubic-bezier(0.4, 0, 0.2, 1)',
       }}
       data-kpi-index={index}
     >
       <div className="p-6">
-        <h3 className="text-sm font-medium text-neutral-600 mb-4 uppercase tracking-wide">
+        <h3 className="text-sm font-medium text-neutral-600 mb-4 uppercase tracking-wide whitespace-nowrap">
           {title}
         </h3>
         <div className="flex items-baseline gap-2">
@@ -85,16 +244,6 @@ function KPICard({ title, value, unit = '', delay = 0, duration = 2000, isHighli
             </span>
           )}
         </div>
-        {isAnimating && (
-          <div className="mt-3 h-1 bg-neutral-100 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-green-500 rounded-full transition-all duration-300"
-              style={{
-                width: `${(displayValue / value) * 100}%`,
-              }}
-            />
-          </div>
-        )}
       </div>
     </div>
   )
@@ -121,6 +270,9 @@ export default function WelcomeDashboard({
   onDontShowAgain,
   isTransitioning,
 }: WelcomeDashboardProps) {
+  const isAIAssistantEnabled = isFeatureEnabled('aiAssistant')
+  const SUB_MENU_ICON_DISTANCE = 70
+
   // Placeholder KPI values for a major industry company
   // These will be replaced with real data later
   const kpis = [
@@ -131,7 +283,7 @@ export default function WelcomeDashboard({
       delay: 200,
     },
     {
-      title: 'Decarbonization Actions Identified',
+      title: 'Decarbonization Actions',
       value: 127, // 127 actions
       unit: '',
       delay: 600,
@@ -152,6 +304,7 @@ export default function WelcomeDashboard({
   const [showAnalysisOverlay, setShowAnalysisOverlay] = useState(false)
   const assistantButtonRef = useRef<HTMLButtonElement>(null)
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const textContainerRef = useRef<HTMLDivElement>(null)
 
   // Analysis templates for each KPI and analysis type
   const analysisTexts: AnalysisText[] = [
@@ -230,12 +383,21 @@ export default function WelcomeDashboard({
 
     setCurrentKpiIndex(kpiIndex)
     const texts = analysisTexts[kpiIndex][type!]
+    
+    // Reset text for new KPI - start from scratch
+    setDisplayedText('')
+    
+    // Type out all text segments one by one, starting fresh
     let currentTextIndex = 0
+    let accumulatedText = ''
     
     const showNextText = () => {
       if (currentTextIndex < texts.length) {
-        typeText(texts[currentTextIndex], () => {
+        const textToAdd = texts[currentTextIndex]
+        typeTextAppend(textToAdd, accumulatedText, () => {
+          accumulatedText += (accumulatedText ? ' ' : '') + textToAdd
           currentTextIndex++
+          
           if (currentTextIndex < texts.length) {
             // Wait a bit before showing next text
             setTimeout(showNextText, 800)
@@ -274,6 +436,60 @@ export default function WelcomeDashboard({
     }, 25) // Adjust speed here (lower = faster)
   }
 
+  const typeTextAppend = (text: string, existingText: string, onComplete?: () => void) => {
+    // Clear any existing typing interval
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current)
+    }
+    
+    setIsTyping(true)
+    let charIndex = 0
+    let lastScrollTime = 0
+    const prefix = existingText ? existingText + ' ' : ''
+    
+    typingIntervalRef.current = setInterval(() => {
+      if (charIndex < text.length) {
+        const newText = prefix + text.substring(0, charIndex + 1)
+        setDisplayedText(newText)
+        charIndex++
+        
+        // Auto-scroll to bottom as text is being typed (if user hasn't scrolled up)
+        // Throttle scrolling to every 100ms for better performance
+        const now = Date.now()
+        if (textContainerRef.current && now - lastScrollTime > 100) {
+          const container = textContainerRef.current
+          const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
+          if (isNearBottom) {
+            lastScrollTime = now
+            // Use requestAnimationFrame for smooth scrolling during typing
+            requestAnimationFrame(() => {
+              if (textContainerRef.current) {
+                textContainerRef.current.scrollTop = textContainerRef.current.scrollHeight
+              }
+            })
+          }
+        }
+      } else {
+        if (typingIntervalRef.current) {
+          clearInterval(typingIntervalRef.current)
+          typingIntervalRef.current = null
+        }
+        setIsTyping(false)
+        // Final scroll to bottom when typing completes
+        if (textContainerRef.current) {
+          requestAnimationFrame(() => {
+            if (textContainerRef.current) {
+              textContainerRef.current.scrollTop = textContainerRef.current.scrollHeight
+            }
+          })
+        }
+        if (onComplete) {
+          setTimeout(onComplete, 500)
+        }
+      }
+    }, 25) // Adjust speed here (lower = faster)
+  }
+
   const handleNextKpi = () => {
     // Stop current typing if in progress
     if (typingIntervalRef.current) {
@@ -282,6 +498,10 @@ export default function WelcomeDashboard({
       setIsTyping(false)
     }
     
+    // Reset displayed text when moving to next KPI - start fresh for each box
+    setDisplayedText('')
+    
+    // Don't reset the bubble position - let it slide smoothly to the next KPI
     if (analysisType) {
       startAnalysis(currentKpiIndex + 1, analysisType)
     }
@@ -348,6 +568,7 @@ export default function WelcomeDashboard({
       }}
     >
       {/* AI Assistant Button - Floating in top right with padding to prevent clipping */}
+      {isAIAssistantEnabled && (
       <div className="fixed top-6 right-6 z-50" style={{ padding: '80px' }}>
         <div className="relative">
           {/* Main AI Assistant Button */}
@@ -360,112 +581,102 @@ export default function WelcomeDashboard({
             title="AI Assistant - Get insights about your data"
             aria-label="AI Assistant"
           >
-            <AIAssistantIcon className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
+            <AIAssistantIcon className="w-7 h-7 text-white group-hover:scale-110 transition-transform flex-shrink-0" />
             {/* Subtle pulse animation */}
             <span className="absolute inset-0 rounded-full bg-teal-400 opacity-0 group-hover:opacity-20 animate-ping"></span>
           </button>
 
-          {/* Sub-menu icon buttons - arranged in a circle around the main icon with slide-out animation */}
+          {/* Sub-menu icon buttons - simple elegant positioning around main icon */}
           {showSubMenu && (
-            <div className="ai-sub-menu absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              {/* Overview - Top (80px from center) */}
+            <div className="ai-sub-menu absolute inset-0">
+              {/* Overview - Top */}
               <button
-                onClick={() => handleAnalysisTypeSelect('overview')}
-                className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group ai-icon-top"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleAnalysisTypeSelect('overview')
+                }}
+                className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group animate-fade-in-submenu"
                 style={{
+                  top: `calc(50% - ${SUB_MENU_ICON_DISTANCE}px)`,
                   left: '50%',
-                  top: '-80px',
-                  transform: 'translateX(-50%)',
+                  transform: 'translate(-50%, -50%)',
+                  animationDelay: '0.1s',
+                  opacity: 0,
                 }}
                 title="Overview Analysis"
                 aria-label="Overview Analysis"
               >
-                <OverviewIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <OverviewIcon className="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
               </button>
 
-              {/* Trends - Bottom (80px from center, same distance as top) */}
+              {/* Trends - Bottom */}
               <button
-                onClick={() => handleAnalysisTypeSelect('trends')}
-                className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group ai-icon-bottom"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleAnalysisTypeSelect('trends')
+                }}
+                className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group animate-fade-in-submenu"
                 style={{
+                  top: `calc(50% + ${SUB_MENU_ICON_DISTANCE}px)`,
                   left: '50%',
-                  top: '80px',
-                  transform: 'translateX(-50%)',
+                  transform: 'translate(-50%, -50%)',
+                  animationDelay: '0.2s',
+                  opacity: 0,
                 }}
                 title="Trend Analysis"
                 aria-label="Trend Analysis"
               >
-                <TrendIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <TrendIcon className="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
               </button>
 
-              {/* Recommendations - Right (80px from center, same distance as top) */}
+              {/* Recommendations - Left */}
               <button
-                onClick={() => handleAnalysisTypeSelect('recommendations')}
-                className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group ai-icon-right"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleAnalysisTypeSelect('recommendations')
+                }}
+                className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group animate-fade-in-submenu"
                 style={{
                   top: '50%',
-                  left: '80px',
-                  transform: 'translateY(-50%)',
+                  left: `calc(50% - ${SUB_MENU_ICON_DISTANCE}px)`,
+                  transform: 'translate(-50%, -50%)',
+                  animationDelay: '0.15s',
+                  opacity: 0,
                 }}
                 title="Recommendations"
                 aria-label="Recommendations"
               >
-                <RecommendationsIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <RecommendationsIcon className="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
               </button>
             </div>
           )}
         </div>
       </div>
+      )}
 
       {/* Analysis Overlay */}
-      {showAnalysisOverlay && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-fade-in">
-          {/* Speech bubble - positioned above the KPI cards area */}
-          <div className="absolute top-32 left-1/2 transform -translate-x-1/2 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg min-w-[350px] relative animate-slide-down-fade-in">
-              {/* Speech bubble tail pointing down */}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-white"></div>
-              
-              {/* Typewriter text */}
-              <div className="text-neutral-800 leading-relaxed min-h-[120px]">
-                <p className="text-sm font-medium text-teal-600 mb-3 flex items-center gap-2">
-                  <AIAssistantIcon className="w-4 h-4" />
-                  AI Analysis
-                </p>
-                <div className="text-base space-y-2">
-                  {displayedText.split('\n').map((line, idx) => (
-                    <p key={idx}>{line || '\u00A0'}</p>
-                  ))}
-                  {isTyping && (
-                    <span className="inline-block w-0.5 h-5 bg-teal-600 ml-1 animate-pulse align-middle">|</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Navigation buttons */}
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-200">
-                <button
-                  onClick={handleSkipAnalysis}
-                  className="px-4 py-2 text-sm text-neutral-600 hover:text-neutral-800 hover:bg-neutral-100 rounded-lg transition-colors"
-                >
-                  Skip Analysis
-                </button>
-                <button
-                  onClick={() => {
-                    if (currentKpiIndex >= kpis.length - 1) {
-                      endAnalysis()
-                    } else {
-                      handleNextKpi()
-                    }
-                  }}
-                  className="px-6 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors"
-                >
-                  {currentKpiIndex >= kpis.length - 1 ? 'Done' : 'Next KPI →'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {isAIAssistantEnabled && showAnalysisOverlay && (
+        <>
+          {/* Blur overlay with exclusion for highlighted card */}
+          <BlurOverlay currentKpiIndex={currentKpiIndex} />
+          
+          {/* Speech bubble - positioned above the highlighted KPI card */}
+          <SpeechBubble
+            currentKpiIndex={currentKpiIndex}
+            displayedText={displayedText}
+            isTyping={isTyping}
+            currentKpiIndexTotal={kpis.length}
+            onSkip={handleSkipAnalysis}
+            onNext={() => {
+              if (currentKpiIndex >= kpis.length - 1) {
+                endAnalysis()
+              } else {
+                handleNextKpi()
+              }
+            }}
+            textContainerRef={textContainerRef}
+          />
+        </>
       )}
 
       {/* Top banner */}

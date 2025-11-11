@@ -4,16 +4,15 @@ import { useEffect, useState } from 'react'
 import Sidebar from '@/components/Sidebar'
 import { useSidebar } from '@/components/SidebarContext'
 import ListDetailTemplate from '@/components/templates/ListDetailTemplate'
-import { companyConfig } from '@/components/templates/configs/companyConfig'
+import { integrationMarketplaceConfig } from '@/components/templates/configs/integrationMarketplaceConfig'
 
 /**
- * Companies Page using ListDetailTemplate
+ * Integrations Management Page
  * 
- * This page displays the Companies table from Airtable
- * using the reusable ListDetailTemplate component.
- * Matches the exact structure and styling of the Geography page.
+ * This page allows administrators to manage AI provider configurations
+ * stored in the Airtable Integration Marketplace table.
  */
-export default function CompaniesPage() {
+export default function IntegrationMarketplacePage() {
   const { isCollapsed } = useSidebar()
   const [shouldAnimate, setShouldAnimate] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -48,7 +47,7 @@ export default function CompaniesPage() {
           opacity: isMounted ? 1 : 1, // Always visible after hydration
         }}
       >
-        <ListDetailTemplate config={companyConfig} />
+        <ListDetailTemplate config={integrationMarketplaceConfig} />
       </div>
     </div>
   )
