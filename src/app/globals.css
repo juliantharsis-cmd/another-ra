@@ -150,6 +150,80 @@ body {
   animation: scatter-out 0.6s ease-out forwards;
 }
 
+/* AI Assistant icon slide-out animations - icons slide from center (behind main icon) */
+@keyframes slide-out-top {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-out-bottom {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(0) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    opacity: 0;
+    transform: translateX(0) translateY(-50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(-50%) scale(1);
+  }
+}
+
+/* Subtle gravitation animation for AI assistant icons - gentle floating effect */
+@keyframes gravitate-top {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-3px);
+  }
+}
+
+@keyframes gravitate-bottom {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(3px);
+  }
+}
+
+@keyframes gravitate-right {
+  0%, 100% {
+    transform: translateY(-50%) translateX(0);
+  }
+  50% {
+    transform: translateY(-50%) translateX(3px);
+  }
+}
+
+.ai-icon-top {
+  animation: slide-out-top 0.4s ease-out forwards, gravitate-top 3s ease-in-out infinite 0.6s;
+}
+
+.ai-icon-bottom {
+  animation: slide-out-bottom 0.4s ease-out forwards, gravitate-bottom 3s ease-in-out infinite 0.6s;
+}
+
+.ai-icon-right {
+  animation: slide-out-right 0.4s ease-out forwards, gravitate-right 3s ease-in-out infinite 0.6s;
+}
+
 @keyframes slide-in-from-left {
   from {
     transform: translateX(-100%);

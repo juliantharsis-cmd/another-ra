@@ -116,6 +116,12 @@ const FEATURE_SECTIONS: FeatureSection[] = [
         description: 'Enable user preferences system for storing user settings',
         section: 'userManagement',
       },
+      {
+        key: 'userRoles',
+        label: 'User Roles',
+        description: 'Enable User Roles table and role management features',
+        section: 'userManagement',
+      },
     ],
   },
   {
@@ -160,6 +166,12 @@ const FEATURE_SECTIONS: FeatureSection[] = [
         key: 'emissionFactorVersion',
         label: 'Emission Factor Version',
         description: 'Enable Emission Factor Version table and versioning features',
+        section: 'emissionManagement',
+      },
+      {
+        key: 'industryClassification',
+        label: 'Industry Factors',
+        description: 'Enable Industry Factors table',
         section: 'emissionManagement',
       },
     ],

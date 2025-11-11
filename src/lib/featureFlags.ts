@@ -23,8 +23,10 @@ type FeatureFlag =
   | 'detailPanelLayout'
   | 'loadingProgressBar'
   | 'userManagement'
+  | 'userRoles'
   | 'columnAutoSizing'
   | 'persistentFiltering'
+  | 'industryClassification'
 
 const featureFlags: Record<FeatureFlag, boolean> = {
   tableActionsV2: process.env.NEXT_PUBLIC_FEATURE_TABLE_ACTIONS_V2 === 'true' || true, // Default to true for development
@@ -45,8 +47,10 @@ const featureFlags: Record<FeatureFlag, boolean> = {
   detailPanelLayout: process.env.NEXT_PUBLIC_FEATURE_DETAIL_PANEL_LAYOUT === 'true' || true, // Default to true
   loadingProgressBar: process.env.NEXT_PUBLIC_FEATURE_LOADING_PROGRESS_BAR === 'true' || true, // Default to true
   userManagement: process.env.NEXT_PUBLIC_FEATURE_USER_MANAGEMENT === 'true' || true, // Default to true
+  userRoles: process.env.NEXT_PUBLIC_FEATURE_USER_ROLES === 'true' || true, // Default to true
   columnAutoSizing: process.env.NEXT_PUBLIC_FEATURE_COLUMN_AUTO_SIZING === 'true' || true, // Default to true (requires columnResizeV2)
   persistentFiltering: process.env.NEXT_PUBLIC_FEATURE_PERSISTENT_FILTERING === 'true' || true, // Default to true
+  industryClassification: process.env.NEXT_PUBLIC_FEATURE_INDUSTRY_CLASSIFICATION === 'true' || true, // Default to true
 }
 
 /**

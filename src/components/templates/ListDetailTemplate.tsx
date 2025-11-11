@@ -2443,11 +2443,10 @@ export default function ListDetailTemplate<T extends { id: string }>({
             </table>
           </div>
         ) : (
-          <div className="w-full overflow-x-auto border border-neutral-200 rounded-lg bg-neutral-50 shadow-sm relative">
+          <div className="w-full border border-neutral-200 rounded-lg bg-neutral-50 shadow-sm relative overflow-x-auto">
             <table className="w-full" style={{ tableLayout: 'auto', minWidth: '100%' }}>
               <thead 
-                className="sticky top-0 z-20 border-b-2 border-neutral-300 shadow-sm"
-                style={{ backgroundColor: '#FAFAFA' }}
+                className="sticky top-0 z-20 border-b-2 border-neutral-300 shadow-sm bg-[#FAFAFA]"
               >
                 <tr>
                   {configuredColumns.filter(col => columnVisibility[col.key] !== false).map((column, idx) => {

@@ -47,6 +47,7 @@ const getNavItems = (): NavItem[] => [
     Icon: UserIcon,
     children: [
       { name: 'Users', Icon: UserIcon, path: '/spaces/user-management/users' },
+      ...(isFeatureEnabled('userRoles') ? [{ name: 'User Roles', Icon: UserIcon, path: '/spaces/system-config/user-roles' }] : []),
     ],
   }] : []),
   {
@@ -56,6 +57,7 @@ const getNavItems = (): NavItem[] => [
       ...(isFeatureEnabled('emissionFactorGwp') ? [{ name: 'Emission Factor GWP', Icon: ChartIcon, path: '/spaces/emission-management/emission-factors' }] : []),
       ...(isFeatureEnabled('emissionFactorVersion') ? [{ name: 'Emission Factor Version', Icon: ChartIcon, path: '/spaces/emission-management/emission-factor-version' }] : []),
       ...(isFeatureEnabled('ghgTypes') ? [{ name: 'GHG Type', Icon: ChartIcon, path: '/spaces/emission-management/ghg-types' }] : []),
+      ...(isFeatureEnabled('industryClassification') ? [{ name: 'Industry Factors', Icon: ChartIcon, path: '/spaces/emission-management/industry-classification' }] : []),
     ],
   },
   { name: 'Sustainability Actions', Icon: LeafIcon, path: '/spaces/system-config/sustainability' },

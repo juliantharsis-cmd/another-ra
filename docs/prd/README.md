@@ -50,6 +50,20 @@ This folder contains Product Requirements Documents for all key features in the 
    - Security safeguards (XSS prevention)
    - Per-user, per-table, per-session isolation
 
+8. **[Table Template Blueprint](./PRD_Table_Template_Blueprint.md)**
+   - Comprehensive blueprint for creating new tables
+   - Based on user table as reference implementation
+   - Navigation patterns, configurations, filters, linked records
+   - Template generator utilities
+   - Step-by-step implementation guide
+
+9. **[Attachment Management](./PRD_Attachment_Management.md)**
+   - File upload and attachment management system
+   - Support for multiple file types (images, PDFs, documents)
+   - Thumbnail previews and file metadata
+   - Airtable and PostgreSQL compatibility
+   - Object storage integration recommendations
+
 ## Document Structure
 
 Each PRD follows a standardized structure:

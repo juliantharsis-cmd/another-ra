@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { applicationListApi, ApplicationList } from '@/lib/api/applicationList'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons'
+import WelcomeDashboard from '@/components/WelcomeDashboard'
 
 interface SpaceCard {
   id: string
@@ -35,12 +36,14 @@ export default function Home() {
   const router = useRouter()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [showCards, setShowCards] = useState(false)
+  const [showWelcomeDashboard, setShowWelcomeDashboard] = useState(false)
   const [spaceCards, setSpaceCards] = useState<SpaceCard[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
   const [homePageData, setHomePageData] = useState<{ imageUrl?: string; logoUrl?: string; description?: string } | null>(null)
   const [showLoginForm, setShowLoginForm] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [welcomeTransitioning, setWelcomeTransitioning] = useState(false)
   const cardsContainerRef = useRef<HTMLDivElement>(null)
   const applicationsCacheRef = useRef<ApplicationList[] | null>(null)
 
@@ -221,11 +224,19 @@ export default function Home() {
   // Check if user is already logged in
   useEffect(() => {
     const loggedIn = localStorage.getItem('another_ra_logged_in') === 'true'
+    const dontShowWelcome = localStorage.getItem('another_ra_dont_show_welcome') === 'true'
+    
     if (loggedIn) {
       setIsLoggedIn(true)
       setShowLoginForm(false)
       loadSpaceCards()
-      setShowCards(true)
+      
+      // Show welcome dashboard if not disabled
+      if (!dontShowWelcome) {
+        setShowWelcomeDashboard(true)
+      } else {
+        setShowCards(true)
+      }
     }
   }, [loadSpaceCards])
 
@@ -247,10 +258,47 @@ export default function Home() {
     // Load space cards in the background
     loadSpaceCards().catch(console.error)
 
-    // After 0.8 seconds, fade in cards with "Select a Space" header (smooth transition)
+    // Check if user wants to skip welcome dashboard
+    const dontShowWelcome = localStorage.getItem('another_ra_dont_show_welcome') === 'true'
+    
+    if (dontShowWelcome) {
+      // Skip welcome dashboard, go directly to space selector
+      setTimeout(() => {
+        setShowCards(true)
+      }, 800)
+    } else {
+      // Show welcome dashboard after login
+      setTimeout(() => {
+        setShowWelcomeDashboard(true)
+      }, 800)
+    }
+  }
+
+  const handleWelcomeNext = () => {
+    // Fade out welcome dashboard
+    setWelcomeTransitioning(true)
+    
+    // After fade out, show space selector
     setTimeout(() => {
+      setShowWelcomeDashboard(false)
+      setWelcomeTransitioning(false)
       setShowCards(true)
-    }, 800)
+    }, 400)
+  }
+
+  const handleDontShowWelcome = () => {
+    // Save preference
+    localStorage.setItem('another_ra_dont_show_welcome', 'true')
+    
+    // Fade out welcome dashboard
+    setWelcomeTransitioning(true)
+    
+    // After fade out, show space selector
+    setTimeout(() => {
+      setShowWelcomeDashboard(false)
+      setWelcomeTransitioning(false)
+      setShowCards(true)
+    }, 400)
   }
 
   const handleCardClick = (path: string) => {
@@ -323,9 +371,19 @@ export default function Home() {
           </div>
         )}
 
-        {/* Space cards - fade in after login */}
-        {showCards && (
-          <div className={`w-full flex flex-col items-center justify-center ${isTransitioning ? 'animate-fade-out' : 'animate-slide-up-fade-in'}`} style={{ position: 'absolute', top: '10%', left: 0, right: 0, bottom: 'auto', minHeight: '70vh' }}>
+        {/* Welcome Dashboard - fade in after login */}
+        {showWelcomeDashboard && (
+          <WelcomeDashboard
+            username={localStorage.getItem('another_ra_username') || loginForm.username || 'User'}
+            onNext={handleWelcomeNext}
+            onDontShowAgain={handleDontShowWelcome}
+            isTransitioning={welcomeTransitioning}
+          />
+        )}
+
+        {/* Space cards - fade in after welcome dashboard or directly after login */}
+        {showCards && !showWelcomeDashboard && (
+          <div className={`w-full flex flex-col items-center justify-center ${isTransitioning ? 'animate-fade-out' : welcomeTransitioning ? 'animate-fade-in' : 'animate-slide-up-fade-in'}`} style={{ position: 'absolute', top: '10%', left: 0, right: 0, bottom: 'auto', minHeight: '70vh' }}>
             {/* Top banner - slide up and fade in smoothly */}
             <div className={`mb-12 flex items-center justify-between w-full max-w-7xl px-4 ${isTransitioning ? 'animate-fade-out' : 'animate-slide-up-fade-in'}`}>
               <div className="flex-1"></div>

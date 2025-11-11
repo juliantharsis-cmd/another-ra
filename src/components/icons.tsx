@@ -129,3 +129,86 @@ export const EyeIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
   </svg>
 )
 
+// AI Assistant Icon - Floral/Mandala pattern
+// Circular icon with white outline drawing of symmetrical floral/mandala pattern on dark teal background
+export const AIAssistantIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {/* Dark teal background circle */}
+    <circle cx="12" cy="12" r="11" fill="#0D9488" />
+    
+    {/* Floral/Mandala pattern - 8-petal symmetrical design with central square */}
+    <g stroke="white" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      {/* Central square - formed by inner curves of petals */}
+      <rect x="10" y="10" width="4" height="4" />
+      
+      {/* Eight rounded petals arranged radially - each petal curves inward toward center */}
+      {/* Top petal */}
+      <path d="M12 3 Q12 7 10 10" />
+      <path d="M12 3 Q12 7 14 10" />
+      
+      {/* Top-right petal */}
+      <path d="M21 12 Q17 12 14 10" />
+      <path d="M21 12 Q17 12 14 12" />
+      
+      {/* Right petal */}
+      <path d="M21 12 Q17 12 14 14" />
+      <path d="M21 12 Q17 12 14 12" />
+      
+      {/* Bottom-right petal */}
+      <path d="M12 21 Q12 17 14 14" />
+      <path d="M12 21 Q12 17 14 12" />
+      
+      {/* Bottom petal */}
+      <path d="M12 21 Q12 17 10 14" />
+      <path d="M12 21 Q12 17 14 14" />
+      
+      {/* Bottom-left petal */}
+      <path d="M3 12 Q7 12 10 14" />
+      <path d="M3 12 Q7 12 10 12" />
+      
+      {/* Left petal */}
+      <path d="M3 12 Q7 12 10 10" />
+      <path d="M3 12 Q7 12 10 12" />
+      
+      {/* Top-left petal */}
+      <path d="M12 3 Q12 7 10 10" />
+      <path d="M12 3 Q12 7 10 12" />
+    </g>
+  </svg>
+)
+
+// Overview Analysis Icon - Eye/View icon
+export const OverviewIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="11" fill="white" />
+    <g stroke="#0D9488" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </g>
+  </svg>
+)
+
+// Trend Analysis Icon - Chart/Line graph icon
+export const TrendIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="11" fill="white" />
+    <g stroke="#0D9488" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 16l4-4 4 4 4-6" />
+      <path d="M6 18h12" />
+      <path d="M6 6v12" />
+    </g>
+  </svg>
+)
+
+// Recommendations Icon - Lightbulb/Spark icon
+export const RecommendationsIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="11" fill="white" />
+    <g stroke="#0D9488" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+      <path d="M7.05 7.05l2.83 2.83M14.12 14.12l2.83 2.83M7.05 16.95l2.83-2.83M14.12 9.88l2.83-2.83" />
+      <circle cx="12" cy="12" r="2" />
+    </g>
+  </svg>
+)
+

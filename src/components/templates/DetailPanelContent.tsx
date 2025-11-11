@@ -5,6 +5,7 @@ import { FieldConfig } from './types'
 import PanelSection from '../panels/PanelSection'
 import PanelField from '../panels/PanelField'
 import ChoiceList from '../panels/ChoiceList'
+import React from 'react'
 
 interface DetailPanelContentProps<T = any> {
   item: T
@@ -370,8 +371,24 @@ export default function DetailPanelContent<T extends { id: string }>({
       )
     }
 
-    // Special rendering for status
-    if (fieldType === 'status') {
+    // Special rendering for select fields (including Status)
+    if (field.type === 'select') {
+      return (
+        <SelectField
+          key={field.key}
+          field={field}
+          value={value}
+          isNewItem={isNewItem}
+          localItem={localItem}
+          setLocalItem={setLocalItem}
+          onUpdate={onUpdate}
+          debouncedUpdate={debouncedUpdate}
+        />
+      )
+    }
+
+    // Special rendering for status (fallback for fields detected as status but not explicitly select type)
+    if (fieldType === 'status' && field.type !== 'select') {
       return (
         <PanelField
           key={field.key}
@@ -797,6 +814,64 @@ function AsyncChoiceList({ field, value, item, onUpdate }: { field: FieldConfig;
       onSearch={isSearchable ? setSearchQuery : undefined}
       isLoading={isLoading}
       onToggle={handleDropdownToggle}
+    />
+  )
+}
+
+// Component to handle select fields with async options
+function SelectField<T extends { id: string }>({
+  field,
+  value,
+  isNewItem,
+  localItem,
+  setLocalItem,
+  onUpdate,
+  debouncedUpdate,
+}: {
+  field: FieldConfig
+  value: any
+  isNewItem: boolean
+  localItem: T
+  setLocalItem: React.Dispatch<React.SetStateAction<T>>
+  onUpdate: (id: string, data: Partial<T>) => Promise<void>
+  debouncedUpdate: (id: string, fieldKey: string, value: any) => void
+}) {
+  const [selectOptions, setSelectOptions] = useState<Array<{ value: string; label: string }>>([])
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false)
+
+  useEffect(() => {
+    if (field.options) {
+      if (typeof field.options === 'function') {
+        setIsLoadingOptions(true)
+        ;(field.options as () => Promise<string[]>)().then(opts => {
+            setSelectOptions(opts.map(opt => ({ value: opt, label: opt })))
+            setIsLoadingOptions(false)
+          })
+          .catch(err => {
+            console.error(`Error loading options for ${field.key}:`, err)
+            setIsLoadingOptions(false)
+          })
+      } else if (Array.isArray(field.options)) {
+        setSelectOptions(field.options.map(opt => ({ value: opt, label: opt })))
+      }
+    }
+  }, [field.options, field.key])
+
+  return (
+    <PanelField
+      label={field.label}
+      value={value}
+      type="select"
+      options={selectOptions}
+      readOnly={!field.editable || (isNewItem && field.type === 'readonly') || isLoadingOptions}
+      onChange={(newValue) => {
+        if (isNewItem) {
+          setLocalItem(prev => ({ ...prev, [field.key]: newValue } as T))
+          onUpdate('', { [field.key]: newValue } as Partial<T>)
+        } else {
+          debouncedUpdate((localItem as any).id, field.key, newValue)
+        }
+      }}
     />
   )
 }
