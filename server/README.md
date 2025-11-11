@@ -41,6 +41,10 @@ npm install
    AIRTABLE_PERSONAL_ACCESS_TOKEN=your_token_here
    AIRTABLE_SYSTEM_CONFIG_BASE_ID=your_base_id_here
    AIRTABLE_COMPANY_TABLE_NAME=Companies
+   AIRTABLE_USER_ROLES_TABLE_ID=your_user_roles_table_id_here
+   AIRTABLE_USER_ROLES_TABLE_NAME=User Roles
+   AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_ID=your_industry_classification_table_id_here
+   AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_NAME=Industry Classification & Emission Factors
    ```
 3. See `AIRTABLE_SETUP.md` for detailed setup instructions
 

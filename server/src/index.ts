@@ -13,6 +13,7 @@ import preferencesRoutes from './routes/preferencesRoutes'
 import applicationListRoutes from './routes/applicationListRoutes'
 import userTableRoutes from './routes/userTableRoutes'
 import userRolesRoutes from './routes/userRolesRoutes'
+import industryClassificationRoutes from './routes/industryClassificationRoutes'
 
 // Load environment variables FIRST, before any other imports
 // Use explicit path to ensure .env is loaded from server directory
@@ -162,6 +163,7 @@ app.use('/api/configurations', tableConfigurationRoutes)
 app.use('/api/emission-factor-version', emissionFactorVersionRoutes)
 app.use('/api/application-list', applicationListRoutes)
 app.use('/api/user-roles', userRolesRoutes)
+app.use('/api/industry-classification', industryClassificationRoutes)
 app.use('/api/users', userTableRoutes)
 
 // 404 handler

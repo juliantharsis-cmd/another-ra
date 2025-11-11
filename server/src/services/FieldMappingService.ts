@@ -67,6 +67,10 @@ export class FieldMappingService {
       console.warn(`   - AIRTABLE_USER_TABLE_TABLE_ID: ${process.env.AIRTABLE_USER_TABLE_TABLE_ID || 'NOT SET'}`)
       console.warn(`   - AIRTABLE_USER_TABLE_TABLE_NAME: ${process.env.AIRTABLE_USER_TABLE_TABLE_NAME || 'NOT SET'}`)
       console.warn(`   - AIRTABLE_COMPANY_TABLE_ID: ${process.env.AIRTABLE_COMPANY_TABLE_ID || 'NOT SET'}`)
+      console.warn(`   - AIRTABLE_USER_ROLES_TABLE_ID: ${process.env.AIRTABLE_USER_ROLES_TABLE_ID || 'NOT SET'}`)
+      console.warn(`   - AIRTABLE_USER_ROLES_TABLE_NAME: ${process.env.AIRTABLE_USER_ROLES_TABLE_NAME || 'NOT SET'}`)
+      console.warn(`   - AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_ID: ${process.env.AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_ID || 'NOT SET'}`)
+      console.warn(`   - AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_NAME: ${process.env.AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_NAME || 'NOT SET'}`)
       return null
     }
     
@@ -226,6 +230,22 @@ export class FieldMappingService {
         tableId: process.env.AIRTABLE_COMPANY_TABLE_ID,
         tableName: process.env.AIRTABLE_COMPANY_TABLE_NAME || 'Companies',
       },
+      'user roles': {
+        tableId: process.env.AIRTABLE_USER_ROLES_TABLE_ID,
+        tableName: process.env.AIRTABLE_USER_ROLES_TABLE_NAME || 'User Roles',
+      },
+      'user-roles': {
+        tableId: process.env.AIRTABLE_USER_ROLES_TABLE_ID,
+        tableName: process.env.AIRTABLE_USER_ROLES_TABLE_NAME || 'User Roles',
+      },
+      'industry classifications': {
+        tableId: process.env.AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_ID,
+        tableName: process.env.AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_NAME || 'Industry Classification & Emission Factors',
+      },
+      'industry-classification': {
+        tableId: process.env.AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_ID,
+        tableName: process.env.AIRTABLE_INDUSTRY_CLASSIFICATION_TABLE_NAME || 'Industry Classification & Emission Factors',
+      },
       // Add more table mappings as needed
     }
 
@@ -266,6 +286,29 @@ export class FieldMappingService {
         'Modules': 'Modules',
         'Profile Name': 'Profile Name',
         'Attachments': 'Attachment',
+        // Add more mappings as needed
+      }
+      return mapping[airtableFieldName] || airtableFieldName
+    }
+
+    // Mappings for User Roles table
+    if (tableId === 'user roles' || tableId === 'user-roles') {
+      const mapping: Record<string, string> = {
+        'Name': 'Name',
+        'Description': 'Description',
+        // Add more mappings as needed
+      }
+      return mapping[airtableFieldName] || airtableFieldName
+    }
+
+    // Mappings for Industry Classification table
+    if (tableId === 'industry classifications' || tableId === 'industry-classification') {
+      const mapping: Record<string, string> = {
+        'Name': 'Name',
+        'Description': 'Description',
+        'Status': 'Status',
+        'Attachment': 'Attachment',
+        'Attachments': 'Attachment', // Handle plural form
         // Add more mappings as needed
       }
       return mapping[airtableFieldName] || airtableFieldName

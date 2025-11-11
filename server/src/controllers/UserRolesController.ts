@@ -1,87 +1,73 @@
 import { Request, Response } from 'express'
-import Airtable from 'airtable'
+import { UserRolesRepository } from '../data/UserRolesRepository'
+import { CreateUserRoleDto, UpdateUserRoleDto } from '../types/UserRole'
+
+const repository = new UserRolesRepository()
 
 /**
  * User Roles Controller
- * Simple controller to fetch User Roles from Airtable
+ * Handles all HTTP requests for User Roles
  */
 export class UserRolesController {
-  private base: Airtable.Base | null = null
-  private tableIdOrName: string | null = null
-
-  /**
-   * Initialize Airtable connection (lazy initialization)
-   */
-  private initialize(): void {
-    if (this.base && this.tableIdOrName) {
-      return // Already initialized
-    }
-
-    const apiKey = process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN || 
-                   process.env.AIRTABLE_API_KEY
-    
-    if (!apiKey) {
-      throw new Error('Airtable API token is required')
-    }
-    
-    const baseId = process.env.AIRTABLE_SYSTEM_CONFIG_BASE_ID || 
-                   'appGtLbKhmNkkTLVL'
-    
-    // Get User Roles table ID or name (same logic as UserTableAirtableService)
-    this.tableIdOrName = process.env.AIRTABLE_USER_ROLES_TABLE_ID || 
-                         process.env.AIRTABLE_USER_ROLES_TABLE_NAME || 
-                         'User Roles'
-    
-    Airtable.configure({ apiKey })
-    this.base = Airtable.base(baseId)
-  }
-
   /**
    * GET /api/user-roles
-   * Get all User Roles records
+   * Get all or paginated User Roles records
    */
   async getAll(req: Request, res: Response): Promise<void> {
     try {
-      // Initialize on first use (after env vars are loaded)
-      this.initialize()
+      const { page, limit, search, sortBy, sortOrder, paginated } = req.query
       
-      if (!this.base || !this.tableIdOrName) {
-        throw new Error('Failed to initialize Airtable connection')
-      }
+      // Parse filters from query parameters
+      const filters: Record<string, any> = {}
+      Object.keys(req.query).forEach(key => {
+        if (!['page', 'limit', 'search', 'sortBy', 'sortOrder', 'paginated'].includes(key)) {
+          const value = req.query[key]
+          if (value !== undefined && value !== null && value !== '') {
+            // Handle array values (multiple query params with same name)
+            if (Array.isArray(value)) {
+              filters[key] = value
+            } else if (typeof value === 'string' && value.includes(',')) {
+              filters[key] = value.split(',')
+            } else {
+              filters[key] = value
+            }
+          }
+        }
+      })
 
-      const { limit, paginated } = req.query
-      const maxRecords = limit ? parseInt(limit as string) : 1000
+      if (paginated === 'true' || page || limit) {
+        const pageNum = page ? parseInt(page as string) : 1
+        const limitNum = limit ? parseInt(limit as string) : 50
+        const offset = (pageNum - 1) * limitNum
 
-      console.log(`📥 Fetching User Roles from table: ${this.tableIdOrName}`)
-      
-      const records = await this.base(this.tableIdOrName)
-        .select({
-          maxRecords,
-          sort: [{ field: 'Name', direction: 'asc' }],
+        const result = await repository.findPaginated({
+          offset,
+          limit: limitNum,
+          search: search as string,
+          sortBy: sortBy as string,
+          sortOrder: (sortOrder as 'asc' | 'desc') || 'asc',
+          filters: Object.keys(filters).length > 0 ? filters : undefined,
         })
-        .all()
 
-      const userRoles = records.map(record => ({
-        id: record.id,
-        Name: record.fields['Name'] as string || record.id,
-        name: record.fields['Name'] as string || record.id,
-        ...record.fields,
-      }))
-
-      console.log(`✅ Fetched ${userRoles.length} User Roles records`)
-
-      if (paginated === 'true') {
         res.json({
           success: true,
-          data: userRoles,
+          data: result.data,
           pagination: {
-            total: userRoles.length,
-            limit: maxRecords,
-            offset: 0,
-            hasMore: false,
+            total: result.total,
+            page: pageNum,
+            limit: limitNum,
+            offset: result.offset,
+            hasMore: result.hasMore,
           },
         })
       } else {
+        const userRoles = await repository.findAll({
+          search: search as string,
+          sortBy: sortBy as string,
+          sortOrder: (sortOrder as 'asc' | 'desc') || 'asc',
+          filters: Object.keys(filters).length > 0 ? filters : undefined,
+        })
+
         res.json({
           success: true,
           data: userRoles,
@@ -90,25 +76,151 @@ export class UserRolesController {
       }
     } catch (error: any) {
       console.error('Error in UserRolesController.getAll:', error)
-      
-      if (error.error === 'NOT_AUTHORIZED' || error.statusCode === 403) {
-        res.status(403).json({
-          success: false,
-          error: 'Not authorized',
-          message: 'No permission to read from User Roles table',
-        })
-        return
-      }
-      
-      if (error.error === 'NOT_FOUND' || error.statusCode === 404) {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  /**
+   * GET /api/user-roles/:id
+   * Get a single User Role by ID
+   */
+  async getById(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params
+      const userRole = await repository.findById(id)
+
+      if (!userRole) {
         res.status(404).json({
           success: false,
           error: 'Not found',
-          message: `User Roles table "${this.tableIdOrName || 'User Roles'}" not found`,
+          message: `User Role with ID ${id} not found`,
         })
         return
       }
 
+      res.json({
+        success: true,
+        data: userRole,
+      })
+    } catch (error: any) {
+      console.error('Error in UserRolesController.getById:', error)
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  /**
+   * POST /api/user-roles
+   * Create a new User Role
+   */
+  async create(req: Request, res: Response): Promise<void> {
+    try {
+      const dto: CreateUserRoleDto = req.body
+      const userRole = await repository.create(dto)
+
+      res.status(201).json({
+        success: true,
+        data: userRole,
+      })
+    } catch (error: any) {
+      console.error('Error in UserRolesController.create:', error)
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  /**
+   * PUT /api/user-roles/:id
+   * Update an existing User Role
+   */
+  async update(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params
+      const dto: UpdateUserRoleDto = req.body
+      const userRole = await repository.update(id, dto)
+
+      if (!userRole) {
+        res.status(404).json({
+          success: false,
+          error: 'Not found',
+          message: `User Role with ID ${id} not found`,
+        })
+        return
+      }
+
+      res.json({
+        success: true,
+        data: userRole,
+      })
+    } catch (error: any) {
+      console.error('Error in UserRolesController.update:', error)
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  /**
+   * DELETE /api/user-roles/:id
+   * Delete a User Role
+   */
+  async delete(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params
+      await repository.delete(id)
+
+      res.json({
+        success: true,
+        message: 'User Role deleted successfully',
+      })
+    } catch (error: any) {
+      console.error('Error in UserRolesController.delete:', error)
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  /**
+   * GET /api/user-roles/filters/values
+   * Get distinct values for filter fields
+   */
+  async getFilterValues(req: Request, res: Response): Promise<void> {
+    try {
+      const { field, limit } = req.query
+      
+      if (!field || typeof field !== 'string') {
+        res.status(400).json({
+          success: false,
+          error: 'Bad request',
+          message: 'Field parameter is required',
+        })
+        return
+      }
+
+      const limitNum = limit ? parseInt(limit as string) : 100
+      const values = await repository.getDistinctValues(field, limitNum)
+
+      res.json({
+        success: true,
+        data: values,
+      })
+    } catch (error: any) {
+      console.error('Error in UserRolesController.getFilterValues:', error)
       res.status(500).json({
         success: false,
         error: 'Internal server error',
@@ -119,4 +231,3 @@ export class UserRolesController {
 }
 
 export const userRolesController = new UserRolesController()
-
