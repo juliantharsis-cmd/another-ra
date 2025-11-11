@@ -80,7 +80,7 @@ Once Git is set up, you can:
 - **View history:** `git log --oneline`
 - **Roll back:** `git reset --hard <commit-hash>`
 
-See `VERSION_CONTROL_GUIDE.md` for complete documentation.
+See [`VERSION_CONTROL_GUIDE.md`](./VERSION_CONTROL_GUIDE.md) for complete documentation.
 
 ---
 

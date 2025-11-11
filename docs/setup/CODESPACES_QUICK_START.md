@@ -90,5 +90,5 @@ npm run dev  # Restart frontend
 
 Your app runs exactly like locally, but in the cloud.
 
-See `CODESPACES_SETUP.md` for detailed instructions.
+See [`CODESPACES_SETUP.md`](./CODESPACES_SETUP.md) for detailed instructions.
 

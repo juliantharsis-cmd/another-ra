@@ -135,7 +135,7 @@ Now that Git is set up, you can:
 
 ## Need Help?
 
-- See `VERSION_CONTROL_GUIDE.md` for detailed documentation
+- See [`VERSION_CONTROL_GUIDE.md`](./VERSION_CONTROL_GUIDE.md) for detailed documentation
 - Common commands are in `git-quick-commands.ps1`
 
 ---
