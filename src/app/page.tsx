@@ -262,7 +262,7 @@ export default function Home() {
 
     // Check if welcome dashboard feature is enabled
     const isWelcomeDashboardEnabled = isFeatureEnabled('welcomeDashboard')
-    
+
     // Check if user wants to skip welcome dashboard
     const dontShowWelcome = localStorage.getItem('another_ra_dont_show_welcome') === 'true'
     

@@ -141,9 +141,37 @@ export function deleteIntegration(id: string): void {
 }
 
 /**
+ * Get integration by provider ID (returns the most recent one if duplicates exist)
+ */
+export function getIntegrationByProviderId(providerId: string): AIIntegration | null {
+  if (typeof window === 'undefined') return null
+
+  const allIntegrations = getAllIntegrations()
+  const providerIntegrations = allIntegrations.filter(i => i.providerId === providerId && i.enabled)
+  
+  if (providerIntegrations.length === 0) return null
+  
+  // Return the most recently updated one
+  return providerIntegrations.reduce((latest, current) => {
+    const latestDate = latest.updatedAt ? new Date(latest.updatedAt).getTime() : 0
+    const currentDate = current.updatedAt ? new Date(current.updatedAt).getTime() : 0
+    return currentDate > latestDate ? current : latest
+  })
+}
+
+/**
  * Create new integration from config
+ * If an integration for this provider already exists, it will be updated instead
  */
 export function createIntegration(config: IntegrationConfig, providerName: string): AIIntegration {
+  // Check if integration for this provider already exists
+  const existing = getIntegrationByProviderId(config.providerId)
+  
+  if (existing) {
+    // Update existing integration instead of creating duplicate
+    return updateIntegration(existing.id, config) || existing
+  }
+  
   const id = `integration_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   const now = new Date()
 
@@ -169,14 +197,91 @@ export function updateIntegration(id: string, updates: Partial<IntegrationConfig
   const existing = getIntegration(id)
   if (!existing) return null
 
+  // Ensure providerId is valid (not an Airtable record ID)
+  // Valid providerIds are: 'openai', 'anthropic', 'google', 'custom'
+  const validProviderIds = ['openai', 'anthropic', 'google', 'custom']
+  let providerId = updates.providerId || existing.providerId
+  
+  // If providerId looks like an Airtable record ID (starts with 'rec'), try to fix it
+  if (providerId && providerId.startsWith('rec') && !validProviderIds.includes(providerId)) {
+    console.warn(`Invalid providerId detected (Airtable record ID): ${providerId}. This should be fixed.`)
+    // Don't update providerId if it's invalid - keep existing one
+    providerId = existing.providerId
+  }
+
   const updated: AIIntegration = {
     ...existing,
     ...updates,
+    providerId: providerId, // Use validated providerId
     apiKey: updates.apiKey !== undefined ? updates.apiKey : existing.apiKey,
     updatedAt: new Date(),
   }
 
   saveIntegration(updated)
   return updated
+}
+
+/**
+ * Update last used timestamp for an integration
+ */
+export function updateLastUsed(id: string): void {
+  const existing = getIntegration(id)
+  if (!existing) return
+
+  const updated: AIIntegration = {
+    ...existing,
+    lastUsed: new Date(),
+    updatedAt: new Date(),
+  }
+
+  saveIntegration(updated)
+}
+
+/**
+ * Clean up duplicate integrations - keeps only the most recent one per provider
+ * Returns the number of duplicates removed
+ */
+export function cleanupDuplicateIntegrations(): number {
+  if (typeof window === 'undefined') return 0
+
+  try {
+    const allIntegrations = getAllIntegrations()
+    const providerMap = new Map<string, AIIntegration[]>()
+    
+    // Group integrations by providerId
+    allIntegrations.forEach(integration => {
+      const existing = providerMap.get(integration.providerId) || []
+      existing.push(integration)
+      providerMap.set(integration.providerId, existing)
+    })
+    
+    let removedCount = 0
+    
+    // For each provider, keep only the most recent integration
+    providerMap.forEach((integrations, providerId) => {
+      if (integrations.length > 1) {
+        // Sort by updatedAt (most recent first)
+        integrations.sort((a, b) => {
+          const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+          const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+          return bDate - aDate
+        })
+        
+        // Keep the first (most recent), delete the rest
+        const toKeep = integrations[0]
+        const toRemove = integrations.slice(1)
+        
+        toRemove.forEach(integration => {
+          deleteIntegration(integration.id)
+          removedCount++
+        })
+      }
+    })
+    
+    return removedCount
+  } catch (error) {
+    console.error('Error cleaning up duplicate integrations:', error)
+    return 0
+  }
 }
 

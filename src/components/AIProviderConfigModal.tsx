@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { XMarkIcon } from './icons'
+import { XMarkIcon, EyeIcon, EyeSlashIcon } from './icons'
 import { AIIntegration, IntegrationConfig } from '@/lib/integrations/types'
 import { IntegrationMarketplaceProvider } from '@/lib/api/integrationMarketplace'
 import {
@@ -12,6 +12,7 @@ import {
   deleteIntegration,
   maskApiKey,
 } from '@/lib/integrations/storage'
+import { aiClient } from '@/lib/ai/client'
 import Notification from './Notification'
 
 interface AIProviderConfigModalProps {
@@ -40,6 +41,8 @@ export default function AIProviderConfigModal({
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
+  const [availableModels, setAvailableModels] = useState<string[]>([])
+  const [isDiscoveringModels, setIsDiscoveringModels] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -54,6 +57,10 @@ export default function AIProviderConfigModal({
         setBaseUrl(integration.baseUrl || provider.baseUrl || '')
         setModel(integration.model || provider.defaultModel || '')
         setEnabled(integration.enabled)
+        // Load available models from metadata if available
+        if (integration.metadata?.availableModels) {
+          setAvailableModels(integration.metadata.availableModels)
+        }
       } else {
         // Reset to defaults
         setApiKey('')
@@ -61,11 +68,53 @@ export default function AIProviderConfigModal({
         setBaseUrl(provider.baseUrl || '')
         setModel(provider.defaultModel || '')
         setEnabled(true)
+        setAvailableModels([])
       }
       setShowApiKey(false)
       setActiveTab('credentials')
     }
   }, [isOpen, integration, provider])
+
+  // Discover models when API key is available and Settings tab is active
+  useEffect(() => {
+    const discoverModels = async () => {
+      if (!isOpen || activeTab !== 'settings' || !apiKey.trim()) {
+        return
+      }
+
+      setIsDiscoveringModels(true)
+      try {
+        const discovery = await aiClient.discoverModels(
+          provider.providerId,
+          apiKey.trim(),
+          baseUrl || provider.baseUrl
+        )
+
+        if (discovery.success && discovery.models && discovery.models.length > 0) {
+          const modelIds = discovery.models.map(m => m.id)
+          setAvailableModels(modelIds)
+          
+          // If current model is not in available models, update to first available
+          if (model && !modelIds.includes(model)) {
+            setModel(modelIds[0])
+          } else if (!model && modelIds.length > 0) {
+            setModel(modelIds[0])
+          }
+        } else {
+          // Fallback to provider's supported models if discovery fails
+          setAvailableModels(provider.supportedModels || [])
+        }
+      } catch (error) {
+        console.error('Error discovering models:', error)
+        // Fallback to provider's supported models
+        setAvailableModels(provider.supportedModels || [])
+      } finally {
+        setIsDiscoveringModels(false)
+      }
+    }
+
+    discoverModels()
+  }, [isOpen, activeTab, apiKey, provider.providerId, provider.baseUrl, provider.supportedModels, baseUrl])
 
   if (!isOpen || !mounted) return null
 
@@ -82,23 +131,38 @@ export default function AIProviderConfigModal({
     setNotification(null)
 
     try {
-      // Simulate connection test (replace with actual API call)
-      await new Promise(resolve => setTimeout(resolve, 1500))
-
-      // In production, make actual API call to test connection
-      // const response = await fetch('/api/integrations/test', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ providerId: provider.id, apiKey, baseUrl }),
-      // })
-
-      setNotification({
-        message: 'Connection test successful!',
-        type: 'success',
+      // Make actual API call to test connection
+      const response = await aiClient.testConnection({
+        providerId: provider.providerId,
+        apiKey: apiKey.trim(),
+        baseUrl: baseUrl || provider.baseUrl,
+        model: model || provider.defaultModel,
       })
+
+      if (response.success) {
+        // If a verified model was found, update the model field
+        if (response.verifiedModel && !model) {
+          setModel(response.verifiedModel)
+        }
+
+        // Store available models in metadata for future use
+        const message = response.verifiedModel
+          ? `${response.message}\n\nAvailable models: ${response.availableModels?.join(', ') || 'N/A'}`
+          : response.message || 'Connection test successful!'
+
+        setNotification({
+          message,
+          type: 'success',
+        })
+      } else {
+        setNotification({
+          message: response.error || 'Connection test failed. Please check your API key and try again.',
+          type: 'error',
+        })
+      }
     } catch (error) {
       setNotification({
-        message: 'Connection test failed. Please check your API key and try again.',
+        message: error instanceof Error ? error.message : 'Connection test failed. Please check your API key and try again.',
         type: 'error',
       })
     } finally {
@@ -119,13 +183,37 @@ export default function AIProviderConfigModal({
     setNotification(null)
 
     try {
+      // If no model is specified, discover and use a working model
+      let finalModel = model?.trim() || provider.defaultModel
+      let availableModels: string[] | undefined
+
+      if (!finalModel) {
+        // Discover models and find a working one
+        const discovery = await aiClient.discoverModels(
+          provider.providerId,
+          apiKey.trim(),
+          baseUrl.trim() || provider.baseUrl
+        )
+
+        if (discovery.success && discovery.models && discovery.models.length > 0) {
+          availableModels = discovery.models.map(m => m.id)
+          finalModel = discovery.models[0].id // Use first available model
+        }
+      }
+
       const config: IntegrationConfig = {
-        providerId: provider.id,
+        providerId: provider.providerId, // Use providerId, not the Airtable record id
         apiKey: apiKey.trim(),
         apiKeyType: apiKeyType,
         baseUrl: baseUrl.trim() || undefined,
-        model: model.trim() || undefined,
+        model: finalModel,
         enabled,
+        metadata: {
+          ...(integration?.metadata || {}),
+          availableModels,
+          verifiedModel: finalModel,
+          lastVerified: new Date().toISOString(),
+        },
       }
 
       if (integration) {
@@ -295,9 +383,14 @@ export default function AIProviderConfigModal({
                     <button
                       type="button"
                       onClick={() => setShowApiKey(!showApiKey)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 transition-colors"
+                      title={showApiKey ? 'Hide API key' : 'Show API key'}
                     >
-                      {showApiKey ? '👁️' : '👁️‍🗨️'}
+                      {showApiKey ? (
+                        <EyeSlashIcon className="w-5 h-5" />
+                      ) : (
+                        <EyeIcon className="w-5 h-5" />
+                      )}
                     </button>
                   </div>
                   {integration && !showApiKey && apiKey && (
@@ -361,11 +454,27 @@ export default function AIProviderConfigModal({
                   </div>
                 )}
 
-                {provider.supportedModels && provider.supportedModels.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Default Model
-                    </label>
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Default Model
+                    {isDiscoveringModels && (
+                      <span className="ml-2 text-xs text-neutral-500">(Discovering...)</span>
+                    )}
+                  </label>
+                  {availableModels.length > 0 ? (
+                    <select
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">Select a model</option>
+                      {availableModels.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  ) : provider.supportedModels && provider.supportedModels.length > 0 ? (
                     <select
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
@@ -378,8 +487,17 @@ export default function AIProviderConfigModal({
                         </option>
                       ))}
                     </select>
-                  </div>
-                )}
+                  ) : (
+                    <div className="w-full px-3 py-2 border border-neutral-300 rounded-md bg-neutral-50 text-neutral-500 text-sm">
+                      {apiKey.trim() ? 'Enter API key and switch to Settings tab to discover models' : 'Enter API key to discover available models'}
+                    </div>
+                  )}
+                  {availableModels.length > 0 && (
+                    <p className="text-xs text-neutral-500 mt-1">
+                      {availableModels.length} model(s) discovered from {provider.name} API
+                    </p>
+                  )}
+                </div>
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
                   <p className="text-sm text-yellow-800">

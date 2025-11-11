@@ -668,12 +668,12 @@ export default function WelcomeDashboard({
             currentKpiIndexTotal={kpis.length}
             onSkip={handleSkipAnalysis}
             onNext={() => {
-              if (currentKpiIndex >= kpis.length - 1) {
-                endAnalysis()
-              } else {
-                handleNextKpi()
-              }
-            }}
+                    if (currentKpiIndex >= kpis.length - 1) {
+                      endAnalysis()
+                    } else {
+                      handleNextKpi()
+                    }
+                  }}
             textContainerRef={textContainerRef}
           />
         </>

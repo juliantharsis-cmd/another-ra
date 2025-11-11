@@ -162,10 +162,10 @@ export default function ListDetailTemplate<T extends { id: string }>({
   useEffect(() => {
     if (!prefsLoading && userDefaultPageSize) {
       if (typeof window !== 'undefined') {
-        const currentTablePageSize = getTablePreferences(entityNamePlural)?.pageSize
-        // Only update if no per-table override exists
-        if (!currentTablePageSize) {
-          setPageSize(userDefaultPageSize)
+      const currentTablePageSize = getTablePreferences(entityNamePlural)?.pageSize
+      // Only update if no per-table override exists
+      if (!currentTablePageSize) {
+        setPageSize(userDefaultPageSize)
         }
       }
     }

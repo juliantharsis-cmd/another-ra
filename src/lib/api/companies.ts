@@ -111,25 +111,25 @@ class CompaniesApiClient {
         const timeoutId = setTimeout(() => abortController.abort(), 30000) // 30 second timeout
 
         try {
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
             signal: abortController.signal,
-          })
+        })
 
           clearTimeout(timeoutId)
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
-          }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`)
+        }
 
-          const result: ApiResponse<Company[]> = await response.json()
+        const result: ApiResponse<Company[]> = await response.json()
 
-          if (!result.success || !result.data) {
-            throw new Error(result.error || 'Failed to fetch companies')
-          }
+        if (!result.success || !result.data) {
+          throw new Error(result.error || 'Failed to fetch companies')
+        }
 
         return {
           data: result.data,

@@ -13,7 +13,12 @@
     "update:user-preferences-schema": "tsx src/scripts/updateUserPreferencesTableSchema.ts",
     "cleanup:user-preferences-table": "tsx src/scripts/cleanupUserPreferencesTable.ts",
     "fetch:table-ids": "tsx ../scripts/fetch-table-ids.ts",
-    "create:integration-marketplace-table": "tsx src/scripts/createIntegrationMarketplaceTable.ts"
+    "create:integration-marketplace-table": "tsx src/scripts/createIntegrationMarketplaceTable.ts",
+    "create:ai-model-registry-table": "tsx src/scripts/createAIModelRegistryTable.ts",
+    "add:model-registry-relationship": "tsx src/scripts/addModelRegistryRelationship.ts",
+    "add:provider-name-lookup": "tsx src/scripts/addProviderNameLookup.ts",
+    "populate:model-registry": "tsx src/scripts/populateModelRegistryFromLocal.ts",
+    "test:ai-model-registry": "tsx src/scripts/testAIModelRegistry.ts"
   },
   "dependencies": {
     "@types/multer": "^2.0.0",

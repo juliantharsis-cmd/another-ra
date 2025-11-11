@@ -59,6 +59,7 @@ const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
     children: [
       ...(featureFlags.emissionFactorGwp ? [{ name: 'Emission Factor GWP', Icon: ChartIcon, path: '/spaces/emission-management/emission-factors' }] : []),
       ...(featureFlags.emissionFactorVersion ? [{ name: 'Emission Factor Version', Icon: ChartIcon, path: '/spaces/emission-management/emission-factor-version' }] : []),
+      { name: 'Standard Emission Factors', Icon: ChartIcon, path: '/spaces/emission-management/standard-emission-factors' },
       ...(featureFlags.ghgTypes ? [{ name: 'GHG Type', Icon: ChartIcon, path: '/spaces/emission-management/ghg-types' }] : []),
       ...(featureFlags.industryClassification ? [{ name: 'Industry Factors', Icon: ChartIcon, path: '/spaces/emission-management/industry-classification' }] : []),
     ],
@@ -69,7 +70,10 @@ const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
     Icon: SettingsIcon,
     children: [
       { name: 'Application List', Icon: SettingsIcon, path: '/spaces/admin/application-list' },
-      ...(featureFlags.integrations ? [{ name: 'Integrations', Icon: SettingsIcon, path: '/spaces/system-config/integration-marketplace' }] : []),
+      ...(featureFlags.integrations ? [
+        { name: 'Integrations', Icon: SettingsIcon, path: '/spaces/system-config/integration-marketplace' },
+        { name: 'AI Model Registry', Icon: SettingsIcon, path: '/spaces/system-config/ai-model-registry' },
+      ] : []),
     ],
   }] : []),
 ]
@@ -398,13 +402,13 @@ export default function Sidebar() {
                 className="relative p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
                 title="Notifications"
               >
-                <BellIcon className="w-5 h-5" />
+              <BellIcon className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[10px] font-semibold text-white bg-green-600 rounded-full">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
-              </button>
+            </button>
             )}
             <button 
               onClick={() => setIsSettingsOpen(true)}
@@ -426,13 +430,13 @@ export default function Sidebar() {
                 className="relative p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
                 title="Notifications"
               >
-                <BellIcon className="w-5 h-5" />
+              <BellIcon className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[10px] font-semibold text-white bg-green-600 rounded-full">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
-              </button>
+            </button>
             )}
             <button 
               onClick={() => setIsSettingsOpen(true)}

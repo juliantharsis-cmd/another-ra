@@ -40,8 +40,8 @@ export const AI_PROVIDERS: AIProvider[] = [
     authType: 'api_key',
     baseUrl: 'https://generativelanguage.googleapis.com/v1',
     documentationUrl: 'https://ai.google.dev/docs',
-    supportedModels: ['gemini-pro', 'gemini-pro-vision'],
-    defaultModel: 'gemini-pro',
+    supportedModels: ['gemini-1.5-pro-latest', 'gemini-1.5-flash-latest', 'gemini-pro', 'gemini-pro-vision'],
+    defaultModel: 'gemini-1.5-flash-latest',
     features: ['chat', 'vision'],
   },
   {

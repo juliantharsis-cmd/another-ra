@@ -4,16 +4,15 @@ import { useEffect, useState } from 'react'
 import Sidebar from '@/components/Sidebar'
 import { useSidebar } from '@/components/SidebarContext'
 import ListDetailTemplate from '@/components/templates/ListDetailTemplate'
-import { companyConfig } from '@/components/templates/configs/companyConfig'
+import { aiModelRegistryConfig } from '@/components/templates/configs/aiModelRegistryConfig'
 
 /**
- * Companies Page using ListDetailTemplate
+ * AI Model Registry Page
  * 
- * This page displays the Companies table from Airtable
- * using the reusable ListDetailTemplate component.
- * Matches the exact structure and styling of the Geography page.
+ * This page allows administrators to view and manage AI models
+ * stored in the Airtable AI Model Registry table.
  */
-export default function CompaniesPage() {
+export default function AIModelRegistryPage() {
   const { isCollapsed } = useSidebar()
   const [shouldAnimate, setShouldAnimate] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -24,12 +23,12 @@ export default function CompaniesPage() {
     
     // Check if we're transitioning from home page (only after mount to prevent hydration issues)
     if (typeof window !== 'undefined') {
-    const isTransitioning = localStorage.getItem('space_transition') === 'true'
-    if (isTransitioning) {
-      // Clear the flag immediately to prevent flickering on subsequent renders
-      localStorage.removeItem('space_transition')
-      // Show content immediately without delay to prevent flicker
-      setShouldAnimate(true)
+      const isTransitioning = localStorage.getItem('space_transition') === 'true'
+      if (isTransitioning) {
+        // Clear the flag immediately to prevent flickering on subsequent renders
+        localStorage.removeItem('space_transition')
+        // Show content immediately without delay to prevent flicker
+        setShouldAnimate(true)
       }
     }
   }, [])
@@ -48,7 +47,7 @@ export default function CompaniesPage() {
           opacity: isMounted ? 1 : 1, // Always visible after hydration
         }}
       >
-        <ListDetailTemplate config={companyConfig} />
+        <ListDetailTemplate config={aiModelRegistryConfig} />
       </div>
     </div>
   )
