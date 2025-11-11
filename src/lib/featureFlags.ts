@@ -31,6 +31,14 @@ type FeatureFlag =
   | 'aiAssistant'
   | 'notifications'
   | 'integrations'
+  | 'normalizedActivities'
+  | 'efDetailedG'
+  | 'scope'
+  | 'scopeCategorisation'
+  | 'unit'
+  | 'unitConversion'
+  | 'standardECMCatalog'
+  | 'standardECMClassification'
 
 const featureFlags: Record<FeatureFlag, boolean> = {
   tableActionsV2: process.env.NEXT_PUBLIC_FEATURE_TABLE_ACTIONS_V2 === 'true' || true, // Default to true for development
@@ -59,6 +67,14 @@ const featureFlags: Record<FeatureFlag, boolean> = {
   aiAssistant: process.env.NEXT_PUBLIC_FEATURE_AI_ASSISTANT === 'true' || true, // Default to true
   notifications: process.env.NEXT_PUBLIC_FEATURE_NOTIFICATIONS === 'true' || true, // Default to true
   integrations: process.env.NEXT_PUBLIC_FEATURE_INTEGRATIONS === 'true' || true, // Default to true
+  normalizedActivities: process.env.NEXT_PUBLIC_FEATURE_NORMALIZED_ACTIVITIES === 'true' || true, // Default to true
+  efDetailedG: process.env.NEXT_PUBLIC_FEATURE_EF_DETAILED_G === 'true' || true, // Default to true
+  scope: process.env.NEXT_PUBLIC_FEATURE_SCOPE === 'true' || true, // Default to true
+  scopeCategorisation: process.env.NEXT_PUBLIC_FEATURE_SCOPE_CATEGORISATION === 'true' || true, // Default to true
+  unit: process.env.NEXT_PUBLIC_FEATURE_UNIT === 'true' || true, // Default to true
+  unitConversion: process.env.NEXT_PUBLIC_FEATURE_UNIT_CONVERSION === 'true' || true, // Default to true
+  standardECMCatalog: process.env.NEXT_PUBLIC_FEATURE_STANDARD_ECM_CATALOG === 'true' || true, // Default to true
+  standardECMClassification: process.env.NEXT_PUBLIC_FEATURE_STANDARD_ECM_CLASSIFICATION === 'true' || true, // Default to true
 }
 
 /**

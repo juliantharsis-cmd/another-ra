@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSidebar } from './SidebarContext'
 import {
   HomeIcon,
@@ -60,8 +60,28 @@ const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
       ...(featureFlags.emissionFactorGwp ? [{ name: 'Emission Factor GWP', Icon: ChartIcon, path: '/spaces/emission-management/emission-factors' }] : []),
       ...(featureFlags.emissionFactorVersion ? [{ name: 'Emission Factor Version', Icon: ChartIcon, path: '/spaces/emission-management/emission-factor-version' }] : []),
       { name: 'Standard Emission Factors', Icon: ChartIcon, path: '/spaces/emission-management/standard-emission-factors' },
+      ...(featureFlags.efDetailedG ? [{ name: 'EF/Detailed G', Icon: ChartIcon, path: '/spaces/emission-management/ef-detailed-g' }] : []),
+      ...(featureFlags.normalizedActivities ? [{ name: 'Normalized Activities', Icon: ChartIcon, path: '/spaces/emission-management/normalized-activities' }] : []),
       ...(featureFlags.ghgTypes ? [{ name: 'GHG Type', Icon: ChartIcon, path: '/spaces/emission-management/ghg-types' }] : []),
       ...(featureFlags.industryClassification ? [{ name: 'Industry Factors', Icon: ChartIcon, path: '/spaces/emission-management/industry-classification' }] : []),
+    ],
+  },
+  {
+    name: 'Reference Data',
+    Icon: DocumentIcon,
+    children: [
+      ...(featureFlags.scope ? [{ name: 'Scope', Icon: DocumentIcon, path: '/spaces/emission-management/scope' }] : []),
+      ...(featureFlags.scopeCategorisation ? [{ name: 'Scope & Categorisation', Icon: DocumentIcon, path: '/spaces/emission-management/scope-categorisation' }] : []),
+      ...(featureFlags.unit ? [{ name: 'Unit', Icon: DocumentIcon, path: '/spaces/emission-management/unit' }] : []),
+      ...(featureFlags.unitConversion ? [{ name: 'Unit Conversion', Icon: DocumentIcon, path: '/spaces/emission-management/unit-conversion' }] : []),
+    ],
+  },
+  {
+    name: 'ECM Management',
+    Icon: LeafIcon,
+    children: [
+      ...(featureFlags.standardECMCatalog ? [{ name: 'Standard ECM Catalog', Icon: ChartIcon, path: '/spaces/emission-management/standard-ecm-catalog' }] : []),
+      ...(featureFlags.standardECMClassification ? [{ name: 'Standard ECM Classification', Icon: ChartIcon, path: '/spaces/emission-management/standard-ecm-classification' }] : []),
     ],
   },
   { name: 'Sustainability Actions', Icon: LeafIcon, path: '/spaces/system-config/sustainability' },
@@ -80,7 +100,7 @@ const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Organization structure', 'User management', 'Emission management', 'Application Settings'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Organization structure', 'User management', 'Emission management', 'Reference Data', 'ECM Management', 'Application Settings'])
   const [isMounted, setIsMounted] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUserPreferencesOpen, setIsUserPreferencesOpen] = useState(false)
@@ -90,6 +110,7 @@ export default function Sidebar() {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
   const [hoveredItemPosition, setHoveredItemPosition] = useState<number | null>(null)
+  const isSubmenuHoveredRef = useRef(false)
   const { isCollapsed, toggleCollapse } = useSidebar()
   
   // Get feature flags - use consistent defaults to avoid hydration mismatch
@@ -111,6 +132,14 @@ export default function Sidebar() {
         ghgTypes: true,
         industryClassification: true,
         applicationList: true,
+        normalizedActivities: true,
+        efDetailedG: true,
+        scope: true,
+        scopeCategorisation: true,
+        unit: true,
+        unitConversion: true,
+        standardECMCatalog: true,
+        standardECMClassification: true,
       }
     }
     // On client, still use defaults initially to match server
@@ -125,6 +154,14 @@ export default function Sidebar() {
       ghgTypes: true,
       industryClassification: true,
       applicationList: true,
+      normalizedActivities: true,
+      efDetailedG: true,
+      scope: true,
+      scopeCategorisation: true,
+      unit: true,
+      unitConversion: true,
+      standardECMCatalog: true,
+      standardECMClassification: true,
     }
   })
   
@@ -211,10 +248,13 @@ export default function Sidebar() {
             setHoveredItem(item.name) // Show submenu for all items on hover
           }}
           onMouseLeave={() => {
+            // Only close if submenu is not being hovered
             const timeout = setTimeout(() => {
-              setHoveredItem(null)
-              setHoveredItemPosition(null)
-            }, 800) // Longer timeout for easier navigation
+              if (!isSubmenuHoveredRef.current) {
+                setHoveredItem(null)
+                setHoveredItemPosition(null)
+              }
+            }, 150) // Short timeout for icon leave
             setHoverTimeout(timeout)
           }}
         >
@@ -485,30 +525,89 @@ export default function Sidebar() {
         
         // Position submenu to align with parent icon (hoveredItemPosition is already viewport-relative)
         const topPosition = hoveredItemPosition
+        // Calculate icon height (approximately 40px with padding)
+        const iconHeight = 40
+        // Calculate submenu height based on number of children
+        const submenuItemHeight = 40 // Approximate height per item
+        const numItems = hasChildren ? (hoveredNavItem.children?.length || 1) : 1
+        const submenuHeight = Math.max(iconHeight, numItems * submenuItemHeight)
         
         return (
-          <div
-            className="fixed left-16 bg-white border-r border-neutral-200 shadow-xl z-40 w-64 animate-slide-in-from-left-submenu overflow-hidden"
-            style={{
-              top: `${topPosition}px`,
-              maxHeight: `calc(100vh - ${topPosition}px)`,
-              minHeight: 'auto',
-              borderRadius: '0 0.5rem 0.5rem 0', // Rounded right corners
-            }}
-            onMouseEnter={() => {
-              if (hoverTimeout) clearTimeout(hoverTimeout)
-              setHoveredItem(hoveredItem)
-            }}
-            onMouseLeave={() => {
-              // Use a longer timeout to allow smooth navigation between sidebar and submenu
-              const timeout = setTimeout(() => {
-                setHoveredItem(null)
-                setHoveredItemPosition(null)
-              }, 800) // Longer timeout for easier navigation
-              setHoverTimeout(timeout)
-            }}
-          >
-            <div className="flex flex-col">
+          <>
+            {/* Bridge element to prevent hover loss between sidebar and submenu */}
+            {/* This invisible bridge fills the gap between sidebar icon and submenu */}
+            <div
+              className="fixed z-40 pointer-events-auto"
+              style={{
+                left: '56px', // Start well inside sidebar (64px - 8px overlap) to ensure no gap
+                top: `${topPosition}px`,
+                width: '20px', // Wider to catch mouse movement more reliably
+                height: `${submenuHeight}px`, // Extend to cover full submenu height
+                backgroundColor: 'transparent', // Invisible but functional
+              }}
+              onMouseEnter={() => {
+                if (hoverTimeout) clearTimeout(hoverTimeout)
+                setHoveredItem(hoveredItem)
+                isSubmenuHoveredRef.current = true
+              }}
+              onMouseLeave={() => {
+                // Don't close immediately - check if mouse moved to submenu
+                const timeout = setTimeout(() => {
+                  if (!isSubmenuHoveredRef.current) {
+                    setHoveredItem(null)
+                    setHoveredItemPosition(null)
+                    isSubmenuHoveredRef.current = false
+                  }
+                }, 150)
+                setHoverTimeout(timeout)
+              }}
+            />
+            <div
+              className="fixed bg-white border-r border-neutral-200 shadow-xl z-40 w-64 animate-slide-in-from-left-submenu overflow-hidden submenu-container"
+              style={{
+                left: '60px', // Start slightly inside sidebar (64px - 4px) to ensure no gap
+                top: `${topPosition}px`,
+                maxHeight: `calc(100vh - ${topPosition}px)`,
+                minHeight: 'auto',
+                borderRadius: '0 0.5rem 0.5rem 0', // Rounded right corners
+                paddingLeft: '4px', // Add padding to compensate for overlap
+              }}
+              onMouseEnter={() => {
+                if (hoverTimeout) clearTimeout(hoverTimeout)
+                setHoveredItem(hoveredItem)
+                isSubmenuHoveredRef.current = true
+              }}
+              onMouseLeave={() => {
+                // Delay setting to false to allow mouse to move to links
+                const timeout = setTimeout(() => {
+                  isSubmenuHoveredRef.current = false
+                  // Check again after a short delay
+                  setTimeout(() => {
+                    if (!isSubmenuHoveredRef.current) {
+                      setHoveredItem(null)
+                      setHoveredItemPosition(null)
+                    }
+                  }, 100)
+                }, 200)
+                setHoverTimeout(timeout)
+              }}
+            >
+            <div 
+              className="flex flex-col"
+              onMouseEnter={() => {
+                // Maintain hover state when mouse is anywhere in the submenu
+                if (hoverTimeout) clearTimeout(hoverTimeout)
+                setHoveredItem(hoveredItem)
+                isSubmenuHoveredRef.current = true
+              }}
+              onMouseLeave={() => {
+                // Don't set to false immediately - allow movement between links
+                const timeout = setTimeout(() => {
+                  isSubmenuHoveredRef.current = false
+                }, 100)
+                setHoverTimeout(timeout)
+              }}
+            >
               {!hasChildren ? (
                 // Single item - show as clickable link aligned with parent
                 hoveredNavItem.path ? (
@@ -519,6 +618,24 @@ export default function Sidebar() {
                         ? 'bg-green-50 text-green-700 border-r-2 border-green-500'
                         : 'text-neutral-700'
                     }`}
+                    onMouseEnter={() => {
+                      // Maintain hover state when mouse enters the link
+                      if (hoverTimeout) clearTimeout(hoverTimeout)
+                      setHoveredItem(hoveredItem)
+                      isSubmenuHoveredRef.current = true
+                    }}
+                    onMouseLeave={(e) => {
+                      // Check if mouse is moving to another element in the submenu
+                      const relatedTarget = e.relatedTarget as HTMLElement
+                      if (relatedTarget && relatedTarget.closest('.submenu-container')) {
+                        isSubmenuHoveredRef.current = true
+                      } else {
+                        // Small delay before setting to false
+                        setTimeout(() => {
+                          isSubmenuHoveredRef.current = false
+                        }, 50)
+                      }
+                    }}
                   >
                     {hoveredNavItem.Icon && (
                       <hoveredNavItem.Icon className={`w-4 h-4 ${active ? 'text-green-600' : 'text-neutral-500'}`} />
@@ -550,6 +667,25 @@ export default function Sidebar() {
                           ? 'bg-green-50 text-green-700 border-r-2 border-green-500'
                           : 'text-neutral-700'
                       }`}
+                      onMouseEnter={() => {
+                        // Maintain hover state when mouse enters a link
+                        if (hoverTimeout) clearTimeout(hoverTimeout)
+                        setHoveredItem(hoveredItem)
+                        isSubmenuHoveredRef.current = true
+                      }}
+                      onMouseLeave={(e) => {
+                        // Check if mouse is moving to another link in the submenu
+                        const relatedTarget = e.relatedTarget as HTMLElement
+                        if (relatedTarget && relatedTarget.closest('.submenu-container')) {
+                          // Mouse is moving to another element in submenu, keep it open
+                          isSubmenuHoveredRef.current = true
+                        } else {
+                          // Small delay before setting to false
+                          setTimeout(() => {
+                            isSubmenuHoveredRef.current = false
+                          }, 50)
+                        }
+                      }}
                     >
                       {child.Icon && (
                         <child.Icon className={`w-4 h-4 ${childActive ? 'text-green-600' : 'text-neutral-500'}`} />
@@ -568,6 +704,7 @@ export default function Sidebar() {
               )}
             </div>
           </div>
+          </>
         )
       })()}
     </>

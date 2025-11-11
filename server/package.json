@@ -16,6 +16,8 @@
     "create:integration-marketplace-table": "tsx src/scripts/createIntegrationMarketplaceTable.ts",
     "create:ai-model-registry-table": "tsx src/scripts/createAIModelRegistryTable.ts",
     "add:model-registry-relationship": "tsx src/scripts/addModelRegistryRelationship.ts",
+    "add:status-field": "tsx src/scripts/addStatusFieldToTables.ts",
+    "check:table-access": "tsx src/scripts/checkTableAccess.ts",
     "add:provider-name-lookup": "tsx src/scripts/addProviderNameLookup.ts",
     "populate:model-registry": "tsx src/scripts/populateModelRegistryFromLocal.ts",
     "test:ai-model-registry": "tsx src/scripts/testAIModelRegistry.ts"

@@ -1,13 +1,13 @@
 import Airtable from 'airtable'
-import { StandardEmissionFactor, CreateStandardEmissionFactorDto, UpdateStandardEmissionFactorDto } from '../types/StandardEmissionFactor'
+import { NormalizedActivity, CreateNormalizedActivityDto, UpdateNormalizedActivityDto } from '../types/NormalizedActivity'
 import { RelationshipResolver } from './RelationshipResolver'
 
 /**
- * Standard Emission Factor Airtable Service
+ * Normalized Activity Airtable Service
  * 
- * Handles all Airtable API interactions for Standard Emission Factor table.
+ * Handles all Airtable API interactions for Normalized Activity table.
  */
-export class StandardEmissionFactorAirtableService {
+export class NormalizedActivityAirtableService {
   private base: Airtable.Base
   private tableName: string
   private relationshipResolver: RelationshipResolver
@@ -23,21 +23,21 @@ export class StandardEmissionFactorAirtableService {
     const baseId = process.env.AIRTABLE_SYSTEM_CONFIG_BASE_ID || 
                    'appGtLbKhmNkkTLVL'
     
-    this.tableName = process.env.AIRTABLE_STANDARD_EMISSION_FACTOR_TABLE_ID || 
-                     process.env.AIRTABLE_STANDARD_EMISSION_FACTOR_TABLE_NAME || 
-                     'Standard Emission factors'
+    this.tableName = process.env.AIRTABLE_NORMALIZED_ACTIVITY_TABLE_ID || 
+                     process.env.AIRTABLE_NORMALIZED_ACTIVITY_TABLE_NAME || 
+                     'Normalized Activities'
     
     Airtable.configure({ apiKey })
     this.base = Airtable.base(baseId)
     this.relationshipResolver = new RelationshipResolver(baseId, apiKey)
     
-    console.log(`🌿 StandardEmissionFactorAirtableService initialized:`)
+    console.log(`🌿 NormalizedActivityAirtableService initialized:`)
     console.log(`   Base ID: ${baseId}`)
     console.log(`   Table: ${this.tableName}`)
   }
 
   /**
-   * Get all Standard Emission Factors with pagination, filtering, and sorting
+   * Get all Normalized Activities with pagination, filtering, and sorting
    */
   async getAll(params: {
     offset?: number
@@ -46,7 +46,7 @@ export class StandardEmissionFactorAirtableService {
     sortOrder?: 'asc' | 'desc'
     search?: string
     status?: string
-  }): Promise<{ data: StandardEmissionFactor[]; total: number }> {
+  }): Promise<{ data: NormalizedActivity[]; total: number }> {
     try {
       let formula = ''
       const conditions: string[] = []
@@ -114,76 +114,76 @@ export class StandardEmissionFactorAirtableService {
         total = countRecords.length
       }
 
-      // Map records and resolve relationships
+      // Map records
       const data = await Promise.all(
-        records.map(record => this.mapAirtableToStandardEmissionFactor(record))
+        records.map(record => this.mapAirtableToNormalizedActivity(record))
       )
 
       return { data, total }
     } catch (error: any) {
-      console.error('Error fetching Standard Emission Factors:', error)
-      throw new Error(`Failed to fetch Standard Emission Factors: ${error.message}`)
+      console.error('Error fetching Normalized Activities:', error)
+      throw new Error(`Failed to fetch Normalized Activities: ${error.message}`)
     }
   }
 
   /**
-   * Get a single Standard Emission Factor by ID
+   * Get a single Normalized Activity by ID
    */
-  async getById(id: string): Promise<StandardEmissionFactor | null> {
+  async getById(id: string): Promise<NormalizedActivity | null> {
     try {
       const record = await this.base(this.tableName).find(id)
-      return await this.mapAirtableToStandardEmissionFactor(record)
+      return await this.mapAirtableToNormalizedActivity(record)
     } catch (error: any) {
       if (error.error === 'NOT_FOUND') {
         return null
       }
-      console.error('Error fetching Standard Emission Factor by ID:', error)
-      throw new Error(`Failed to fetch Standard Emission Factor: ${error.message}`)
+      console.error('Error fetching Normalized Activity by ID:', error)
+      throw new Error(`Failed to fetch Normalized Activity: ${error.message}`)
     }
   }
 
   /**
-   * Create a new Standard Emission Factor
+   * Create a new Normalized Activity
    */
-  async create(dto: CreateStandardEmissionFactorDto): Promise<StandardEmissionFactor> {
+  async create(dto: CreateNormalizedActivityDto): Promise<NormalizedActivity> {
     try {
-      const fields = this.mapStandardEmissionFactorToAirtable(dto)
+      const fields = this.mapNormalizedActivityToAirtable(dto)
       
       const records = await this.base(this.tableName).create([{ fields }])
       const record = records[0]
       
-      return await this.mapAirtableToStandardEmissionFactor(record)
+      return await this.mapAirtableToNormalizedActivity(record)
     } catch (error: any) {
-      console.error('Error creating Standard Emission Factor:', error)
-      throw new Error(`Failed to create Standard Emission Factor: ${error.message}`)
+      console.error('Error creating Normalized Activity:', error)
+      throw new Error(`Failed to create Normalized Activity: ${error.message}`)
     }
   }
 
   /**
-   * Update an existing Standard Emission Factor
+   * Update an existing Normalized Activity
    */
-  async update(id: string, dto: UpdateStandardEmissionFactorDto): Promise<StandardEmissionFactor> {
+  async update(id: string, dto: UpdateNormalizedActivityDto): Promise<NormalizedActivity> {
     try {
-      const fields = this.mapStandardEmissionFactorToAirtable(dto)
+      const fields = this.mapNormalizedActivityToAirtable(dto)
       
       const record = await this.base(this.tableName).update([{ id, fields }])
       
-      return await this.mapAirtableToStandardEmissionFactor(record[0])
+      return await this.mapAirtableToNormalizedActivity(record[0])
     } catch (error: any) {
-      console.error('Error updating Standard Emission Factor:', error)
-      throw new Error(`Failed to update Standard Emission Factor: ${error.message}`)
+      console.error('Error updating Normalized Activity:', error)
+      throw new Error(`Failed to update Normalized Activity: ${error.message}`)
     }
   }
 
   /**
-   * Delete a Standard Emission Factor
+   * Delete a Normalized Activity
    */
   async delete(id: string): Promise<void> {
     try {
       await this.base(this.tableName).destroy([id])
     } catch (error: any) {
-      console.error('Error deleting Standard Emission Factor:', error)
-      throw new Error(`Failed to delete Standard Emission Factor: ${error.message}`)
+      console.error('Error deleting Normalized Activity:', error)
+      throw new Error(`Failed to delete Normalized Activity: ${error.message}`)
     }
   }
 
@@ -220,51 +220,16 @@ export class StandardEmissionFactorAirtableService {
   }
 
   /**
-   * Map Airtable record to StandardEmissionFactor interface
+   * Map Airtable record to NormalizedActivity interface
    */
-  private async mapAirtableToStandardEmissionFactor(record: Airtable.Record<any>): Promise<StandardEmissionFactor> {
+  private async mapAirtableToNormalizedActivity(record: Airtable.Record<any>): Promise<NormalizedActivity> {
     const fields = record.fields
-    
-    // Resolve linked record names
-    const [
-      emissionFactorVersionNames,
-      emissionFactorSetNames,
-      ghgTypeNames,
-      efGwpNames,
-      efDetailedGNames,
-    ] = await Promise.all([
-      fields['Emission Factor Version'] 
-        ? this.relationshipResolver.resolveLinkedRecords(fields['Emission Factor Version'], 'Emission Factor Version', 'Name')
-        : Promise.resolve([]),
-      fields['Emission Factor Set']
-        ? this.relationshipResolver.resolveLinkedRecords(fields['Emission Factor Set'], 'Emission Factor Set', 'Name')
-        : Promise.resolve([]),
-      fields['GHG TYPE']
-        ? this.relationshipResolver.resolveLinkedRecords(fields['GHG TYPE'], 'GHG TYPE', 'Name')
-        : Promise.resolve([]),
-      fields['EF GWP']
-        ? this.relationshipResolver.resolveLinkedRecords(fields['EF GWP'], 'EF GWP', 'Name')
-        : Promise.resolve([]),
-      fields['EF/Detailed G']
-        ? this.relationshipResolver.resolveLinkedRecords(fields['EF/Detailed G'], 'EF/Detailed G', 'Name')
-        : Promise.resolve([]),
-    ])
 
     return {
       id: record.id,
       Name: fields['Name'] || '',
       Description: fields['Description'] || '',
       Status: fields['Status'] || 'Active',
-      'Emission Factor Version': fields['Emission Factor Version'] || undefined,
-      'Emission Factor Version Name': emissionFactorVersionNames.map(r => r.name),
-      'Emission Factor Set': fields['Emission Factor Set'] || undefined,
-      'Emission Factor Set Name': emissionFactorSetNames.map(r => r.name),
-      'GHG TYPE': fields['GHG TYPE'] || undefined,
-      'GHG TYPE Name': ghgTypeNames.map(r => r.name),
-      'EF GWP': fields['EF GWP'] || undefined,
-      'EF GWP Name': efGwpNames.map(r => r.name),
-      'EF/Detailed G': fields['EF/Detailed G'] || undefined,
-      'EF/Detailed G Name': efDetailedGNames.map(r => r.name),
       Notes: fields['Notes'] || '',
       createdAt: this.formatDate(record._rawJson.createdTime),
       updatedAt: this.formatDate(record._rawJson.lastModifiedTime),
@@ -274,9 +239,9 @@ export class StandardEmissionFactorAirtableService {
   }
 
   /**
-   * Map StandardEmissionFactor DTO to Airtable fields
+   * Map NormalizedActivity DTO to Airtable fields
    */
-  private mapStandardEmissionFactorToAirtable(dto: CreateStandardEmissionFactorDto | UpdateStandardEmissionFactorDto): Record<string, any> {
+  private mapNormalizedActivityToAirtable(dto: CreateNormalizedActivityDto | UpdateNormalizedActivityDto): Record<string, any> {
     const fields: Record<string, any> = {}
     
     if (dto.Name !== undefined && dto.Name !== null && String(dto.Name).trim() !== '') {
@@ -289,31 +254,6 @@ export class StandardEmissionFactorAirtableService {
       fields['Status'] = String(dto.Status).trim()
     } else if (!('Status' in dto)) {
       fields['Status'] = 'Active' // Default
-    }
-    if (dto['Emission Factor Version'] !== undefined) {
-      fields['Emission Factor Version'] = Array.isArray(dto['Emission Factor Version']) 
-        ? dto['Emission Factor Version'] 
-        : [dto['Emission Factor Version']]
-    }
-    if (dto['Emission Factor Set'] !== undefined) {
-      fields['Emission Factor Set'] = Array.isArray(dto['Emission Factor Set']) 
-        ? dto['Emission Factor Set'] 
-        : [dto['Emission Factor Set']]
-    }
-    if (dto['GHG TYPE'] !== undefined) {
-      fields['GHG TYPE'] = Array.isArray(dto['GHG TYPE']) 
-        ? dto['GHG TYPE'] 
-        : [dto['GHG TYPE']]
-    }
-    if (dto['EF GWP'] !== undefined) {
-      fields['EF GWP'] = Array.isArray(dto['EF GWP']) 
-        ? dto['EF GWP'] 
-        : [dto['EF GWP']]
-    }
-    if (dto['EF/Detailed G'] !== undefined) {
-      fields['EF/Detailed G'] = Array.isArray(dto['EF/Detailed G']) 
-        ? dto['EF/Detailed G'] 
-        : [dto['EF/Detailed G']]
     }
     if (dto.Notes !== undefined && dto.Notes !== null && String(dto.Notes).trim() !== '') {
       fields['Notes'] = String(dto.Notes).trim()

@@ -18,6 +18,14 @@ import integrationMarketplaceRoutes from './routes/integrationMarketplace'
 import aiRoutes from './routes/aiRoutes'
 import aiModelRegistryRoutes from './routes/aiModelRegistry'
 import standardEmissionFactorRoutes from './routes/standardEmissionFactorRoutes'
+import normalizedActivityRoutes from './routes/normalizedActivityRoutes'
+import efDetailedGRoutes from './routes/efDetailedGRoutes'
+import scopeRoutes from './routes/scopeRoutes'
+import scopeCategorisationRoutes from './routes/scopeCategorisationRoutes'
+import unitRoutes from './routes/unitRoutes'
+import unitConversionRoutes from './routes/unitConversionRoutes'
+import standardECMCatalogRoutes from './routes/standardECMCatalogRoutes'
+import standardECMClassificationRoutes from './routes/standardECMClassificationRoutes'
 
 // Load environment variables FIRST, before any other imports
 // Use explicit path to ensure .env is loaded from server directory
@@ -173,6 +181,14 @@ app.use('/api/integration-marketplace', integrationMarketplaceRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/ai-model-registry', aiModelRegistryRoutes)
 app.use('/api/standard-emission-factors', standardEmissionFactorRoutes)
+app.use('/api/normalized-activities', normalizedActivityRoutes)
+app.use('/api/ef-detailed-g', efDetailedGRoutes)
+app.use('/api/scope', scopeRoutes)
+app.use('/api/scope-categorisation', scopeCategorisationRoutes)
+app.use('/api/unit', unitRoutes)
+app.use('/api/unit-conversion', unitConversionRoutes)
+app.use('/api/standard-ecm-catalog', standardECMCatalogRoutes)
+app.use('/api/standard-ecm-classification', standardECMClassificationRoutes)
 
 // 404 handler
 app.use((req: Request, res: Response) => {

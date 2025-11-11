@@ -1,21 +1,17 @@
 import { Request, Response } from 'express'
-import { StandardEmissionFactorAirtableService } from '../services/StandardEmissionFactorAirtableService'
-import { CreateStandardEmissionFactorDto, UpdateStandardEmissionFactorDto } from '../types/StandardEmissionFactor'
+import { UnitAirtableService } from '../services/UnitAirtableService'
+import { CreateUnitDto, UpdateUnitDto } from '../types/Unit'
 
-export class StandardEmissionFactorController {
-  private service: StandardEmissionFactorAirtableService | null = null
+export class UnitController {
+  private service: UnitAirtableService | null = null
 
-  private getService(): StandardEmissionFactorAirtableService {
+  private getService(): UnitAirtableService {
     if (!this.service) {
-      this.service = new StandardEmissionFactorAirtableService()
+      this.service = new UnitAirtableService()
     }
     return this.service
   }
 
-  /**
-   * GET /api/standard-emission-factors
-   * Get all Standard Emission Factors with pagination, filtering, and sorting
-   */
   async getAll(req: Request, res: Response): Promise<void> {
     try {
       const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined
@@ -49,18 +45,14 @@ export class StandardEmissionFactorController {
         pagination,
       })
     } catch (error: any) {
-      console.error('Error in StandardEmissionFactorController.getAll:', error)
+      console.error('Error in UnitController.getAll:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to fetch Standard Emission Factors',
+        error: error.message || 'Failed to fetch Units',
       })
     }
   }
 
-  /**
-   * GET /api/standard-emission-factors/:id
-   * Get a single Standard Emission Factor by ID
-   */
   async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
@@ -69,7 +61,7 @@ export class StandardEmissionFactorController {
       if (!record) {
         res.status(404).json({
           success: false,
-          error: 'Standard Emission Factor not found',
+          error: 'Unit not found',
         })
         return
       }
@@ -79,21 +71,17 @@ export class StandardEmissionFactorController {
         data: record,
       })
     } catch (error: any) {
-      console.error('Error in StandardEmissionFactorController.getById:', error)
+      console.error('Error in UnitController.getById:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to fetch Standard Emission Factor',
+        error: error.message || 'Failed to fetch Unit',
       })
     }
   }
 
-  /**
-   * POST /api/standard-emission-factors
-   * Create a new Standard Emission Factor
-   */
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const dto: CreateStandardEmissionFactorDto = req.body
+      const dto: CreateUnitDto = req.body
       const record = await this.getService().create(dto)
 
       res.status(201).json({
@@ -101,22 +89,18 @@ export class StandardEmissionFactorController {
         data: record,
       })
     } catch (error: any) {
-      console.error('Error in StandardEmissionFactorController.create:', error)
+      console.error('Error in UnitController.create:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to create Standard Emission Factor',
+        error: error.message || 'Failed to create Unit',
       })
     }
   }
 
-  /**
-   * PUT /api/standard-emission-factors/:id
-   * Update an existing Standard Emission Factor
-   */
   async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
-      const dto: UpdateStandardEmissionFactorDto = req.body
+      const dto: UpdateUnitDto = req.body
       const record = await this.getService().update(id, dto)
 
       res.json({
@@ -124,18 +108,14 @@ export class StandardEmissionFactorController {
         data: record,
       })
     } catch (error: any) {
-      console.error('Error in StandardEmissionFactorController.update:', error)
+      console.error('Error in UnitController.update:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to update Standard Emission Factor',
+        error: error.message || 'Failed to update Unit',
       })
     }
   }
 
-  /**
-   * DELETE /api/standard-emission-factors/:id
-   * Delete a Standard Emission Factor
-   */
   async delete(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
@@ -143,21 +123,17 @@ export class StandardEmissionFactorController {
 
       res.json({
         success: true,
-        message: 'Standard Emission Factor deleted successfully',
+        message: 'Unit deleted successfully',
       })
     } catch (error: any) {
-      console.error('Error in StandardEmissionFactorController.delete:', error)
+      console.error('Error in UnitController.delete:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to delete Standard Emission Factor',
+        error: error.message || 'Failed to delete Unit',
       })
     }
   }
 
-  /**
-   * GET /api/standard-emission-factors/filters/values
-   * Get distinct values for a filter field
-   */
   async getFilterValues(req: Request, res: Response): Promise<void> {
     try {
       const field = req.query.field as string
@@ -178,7 +154,7 @@ export class StandardEmissionFactorController {
         data: values,
       })
     } catch (error: any) {
-      console.error('Error in StandardEmissionFactorController.getFilterValues:', error)
+      console.error('Error in UnitController.getFilterValues:', error)
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to get filter values',
