@@ -467,6 +467,16 @@ export default function ListDetailTemplate<T extends { id: string }>({
       'Scope': 'ScopeName',
       'Unit to convert': 'Unit to convert Name',
       'Normalized unit': 'Normalized unit Name',
+      // Standard Emission Factors linked record mappings
+      'Emission Factors Dataset': 'Emission Factors Dataset Name',
+      'GHG Unit (CO2e)': 'GHG Unit (CO2e) Name',
+      'Industry Classification & Emission Factors': 'Industry Classification & Emission Factors Name',
+      'Version': 'Version Name',
+      'Normalized activity': 'Normalized activity Name',
+      'Industry Classification': 'Industry Classification Name',
+      'Source UOM': 'Source UOM Name',
+      'Activity Default UOM': 'Activity Default UOM Name',
+      'EF/Detailed G': 'EF/Detailed G Name',
       // Add other linked record mappings as needed
     }
     
@@ -2539,10 +2549,11 @@ export default function ListDetailTemplate<T extends { id: string }>({
                         style={{ 
                           width: currentWidth ? `${currentWidth}px` : (typeof defaultWidth === 'string' ? defaultWidth : 'auto'),
                           minWidth: `${minWidth}px`,
-                          maxWidth: currentWidth ? `${currentWidth}px` : `${maxWidth}px`,
+                          maxWidth: `${maxWidth}px`,
                           position: 'relative',
                           // Smooth transition only when not resizing
                           transition: isResizing ? 'none' : 'width 0.2s ease',
+                          overflow: 'hidden',
                         }}
                         className={`px-4 py-4 border-r border-neutral-200 ${
                           alignment === 'center' ? 'text-center' : 
@@ -2554,7 +2565,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
                         <div className={`flex items-center h-full ${
                           alignment === 'center' ? 'justify-center' : 
                           alignment === 'right' ? 'justify-end' : 'justify-start'
-                        }`}>
+                        }`} style={{ minWidth: 0, overflow: 'hidden' }}>
                           {column.sortable ? (
                             <button
                               onClick={() => handleSort(column.key)}
@@ -2562,15 +2573,16 @@ export default function ListDetailTemplate<T extends { id: string }>({
                                 alignment === 'center' ? 'justify-center' : 
                                 alignment === 'right' ? 'justify-end' : 'justify-start'
                               }`}
+                              style={{ minWidth: 0, overflow: 'hidden' }}
                               aria-label={`Sort by ${column.label}`}
                             >
-                              <span className="whitespace-nowrap">
+                              <span className="whitespace-nowrap truncate" title={column.label}>
                                 {column.label}
                               </span>
                               {getSortIcon(column.key)}
                             </button>
                           ) : (
-                            <span className="text-xs font-semibold text-neutral-700 uppercase tracking-wider whitespace-nowrap">
+                            <span className="text-xs font-semibold text-neutral-700 uppercase tracking-wider whitespace-nowrap truncate" title={column.label}>
                               {column.label}
                             </span>
                           )}

@@ -26,6 +26,11 @@ import unitRoutes from './routes/unitRoutes'
 import unitConversionRoutes from './routes/unitConversionRoutes'
 import standardECMCatalogRoutes from './routes/standardECMCatalogRoutes'
 import standardECMClassificationRoutes from './routes/standardECMClassificationRoutes'
+import aiAgentProfileRoutes from './routes/aiAgentProfileRoutes'
+import activityDensityRoutes from './routes/activityDensityRoutes'
+import keywordsTagsRoutes from './routes/keywordsTagsRoutes'
+import userPreferenceRoutes from './routes/userPreferenceRoutes'
+import developerRoutes from './routes/developerRoutes'
 
 // Load environment variables FIRST, before any other imports
 // Use explicit path to ensure .env is loaded from server directory
@@ -189,6 +194,11 @@ app.use('/api/unit', unitRoutes)
 app.use('/api/unit-conversion', unitConversionRoutes)
 app.use('/api/standard-ecm-catalog', standardECMCatalogRoutes)
 app.use('/api/standard-ecm-classification', standardECMClassificationRoutes)
+app.use('/api/ai-agent-profile', aiAgentProfileRoutes)
+app.use('/api/activity-density', activityDensityRoutes)
+app.use('/api/keywords-tags', keywordsTagsRoutes)
+app.use('/api/user-preference', userPreferenceRoutes)
+app.use('/api/developer', developerRoutes)
 
 // 404 handler
 app.use((req: Request, res: Response) => {

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { XMarkIcon } from './icons'
 import { userPreferencesApi, UserPreferences, UpdateUserPreferencesDto } from '@/lib/api/userPreferences'
+import { aiAgentProfileApi, AIAgentProfile } from '@/lib/api/aiAgentProfile'
+import AIAgentProfileSection from './AIAgentProfileSection'
 import Notification from './Notification'
 
 // Timezone options (common timezones)
@@ -88,6 +90,12 @@ const PREFERENCE_SECTIONS: PreferenceSection[] = [
     description: 'Default table and data display preferences',
     defaultExpanded: false,
   },
+  {
+    id: 'aiAgent',
+    title: 'AI Agent Profile',
+    description: 'Customize how AI assistants behave and respond to you',
+    defaultExpanded: false,
+  },
 ]
 
 interface UserPreferencesModalProps {
@@ -98,6 +106,8 @@ interface UserPreferencesModalProps {
 export default function UserPreferencesModal({ isOpen, onClose }: UserPreferencesModalProps) {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null)
   const [originalPreferences, setOriginalPreferences] = useState<UserPreferences | null>(null)
+  const [aiAgentProfile, setAiAgentProfile] = useState<AIAgentProfile>({})
+  const [originalAiAgentProfile, setOriginalAiAgentProfile] = useState<AIAgentProfile>({})
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -119,6 +129,19 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
       const data = await userPreferencesApi.getPreferences()
       setPreferences(data)
       setOriginalPreferences(data)
+      
+      // Load AI Agent Profile
+      try {
+        const profile = await aiAgentProfileApi.getProfile()
+        setAiAgentProfile(profile)
+        setOriginalAiAgentProfile(profile)
+      } catch (error) {
+        console.warn('Failed to load AI Agent Profile:', error)
+        // Use empty profile (will use defaults)
+        setAiAgentProfile({})
+        setOriginalAiAgentProfile({})
+      }
+      
       setHasChanges(false)
     } catch (error) {
       console.error('Failed to load preferences:', error)
@@ -168,6 +191,14 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
     setHasChanges(true)
   }
 
+  const handleAiAgentProfileChange = (field: keyof AIAgentProfile, value: any) => {
+    setAiAgentProfile({
+      ...aiAgentProfile,
+      [field]: value,
+    })
+    setHasChanges(true)
+  }
+
   const handleSave = async () => {
     if (!preferences || !originalPreferences) return
 
@@ -186,6 +217,23 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
       const updated = await userPreferencesApi.updatePreferences(updates)
       setPreferences(updated)
       setOriginalPreferences(updated)
+      
+      // Save AI Agent Profile if changed
+      const profileChanged = JSON.stringify(aiAgentProfile) !== JSON.stringify(originalAiAgentProfile)
+      if (profileChanged) {
+        try {
+          await aiAgentProfileApi.saveProfile(aiAgentProfile)
+          setOriginalAiAgentProfile(aiAgentProfile)
+        } catch (error) {
+          console.error('Failed to save AI Agent Profile:', error)
+          setNotification({
+            message: 'Preferences saved, but AI Agent Profile failed to save. Please try again.',
+            type: 'error',
+          })
+          return
+        }
+      }
+      
       setHasChanges(false)
       setNotification({
         message: 'Preferences saved successfully!',
@@ -636,6 +684,21 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
                         </div>
                       )}
                     </div>
+                  )
+                })()}
+
+                {/* AI Agent Profile Section */}
+                {PREFERENCE_SECTIONS.find(s => s.id === 'aiAgent') && (() => {
+                  const section = PREFERENCE_SECTIONS.find(s => s.id === 'aiAgent')!
+                  const isExpanded = expandedSections.has(section.id)
+                  return (
+                    <AIAgentProfileSection
+                      key={section.id}
+                      profile={aiAgentProfile}
+                      onChange={handleAiAgentProfileChange}
+                      isExpanded={isExpanded}
+                      onToggle={() => toggleSection(section.id)}
+                    />
                   )
                 })()}
 

@@ -34,7 +34,8 @@ if (baseTables.includes(tableName)) {
             { name: "table" }, 
             { name: "filters" }, 
             { name: "featureFlags" }, 
-            { name: "misc" }
+            { name: "misc" },
+            { name: "ai" }
           ] 
         } 
       },

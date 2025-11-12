@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { AIAssistantIcon, OverviewIcon, TrendIcon, RecommendationsIcon } from './icons'
 import { isFeatureEnabled } from '@/lib/featureFlags'
+import { getAllIntegrations } from '@/lib/integrations/storage'
+import { AIIntegration } from '@/lib/integrations/types'
+import { aiClient } from '@/lib/ai/client'
 
 interface BlurOverlayProps {
   currentKpiIndex: number
@@ -23,13 +26,15 @@ interface SpeechBubbleProps {
   currentKpiIndex: number
   displayedText: string
   isTyping: boolean
+  isLoadingAI: boolean
+  isTemplateText: boolean
   currentKpiIndexTotal: number
   onSkip: () => void
   onNext: () => void
   textContainerRef: React.RefObject<HTMLDivElement>
 }
 
-function SpeechBubble({ currentKpiIndex, displayedText, isTyping, currentKpiIndexTotal, onSkip, onNext, textContainerRef }: SpeechBubbleProps) {
+function SpeechBubble({ currentKpiIndex, displayedText, isTyping, isLoadingAI, isTemplateText, currentKpiIndexTotal, onSkip, onNext, textContainerRef, isUsingCustomProfile }: SpeechBubbleProps) {
   const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number; opacity: number } | null>(null)
   const isPositionedRef = useRef(false)
   const bubbleRef = useRef<HTMLDivElement>(null)
@@ -109,6 +114,13 @@ function SpeechBubble({ currentKpiIndex, displayedText, isTyping, currentKpiInde
       }}
     >
       <div className="bg-white rounded-2xl shadow-2xl p-6 w-[400px] max-h-[250px] flex flex-col relative animate-smooth-fade-in">
+        {/* AI Agent Profile indicator */}
+        {isUsingCustomProfile && (
+          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 px-2 py-1 bg-green-100 border border-green-300 rounded-md text-xs text-green-700 z-10 whitespace-nowrap">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span className="font-medium">Using your custom AI profile</span>
+          </div>
+        )}
         {/* Speech bubble tail pointing down */}
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-white"></div>
         
@@ -116,6 +128,9 @@ function SpeechBubble({ currentKpiIndex, displayedText, isTyping, currentKpiInde
         <p className="text-sm font-medium text-teal-600 mb-3 flex items-center gap-2 flex-shrink-0">
           <AIAssistantIcon className="w-4 h-4" />
           AI Analysis
+          {isLoadingAI && (
+            <span className="text-xs text-neutral-400 ml-auto">Generating...</span>
+          )}
         </p>
         
         {/* Scrollable text content - accumulates all text */}
@@ -134,9 +149,17 @@ function SpeechBubble({ currentKpiIndex, displayedText, isTyping, currentKpiInde
           }}
         >
           <div className="text-sm">
-            <p className="whitespace-pre-wrap">{displayedText}</p>
-            {isTyping && (
-              <span className="inline-block w-0.5 h-4 bg-teal-600 ml-1 animate-pulse align-middle">|</span>
+            {isLoadingAI && !displayedText ? (
+              <p className="text-neutral-400 italic">Analyzing KPI data with AI...</p>
+            ) : (
+              <>
+                <p className={`whitespace-pre-wrap ${isTemplateText ? 'text-blue-600' : 'text-neutral-800'}`}>
+                  {displayedText}
+                </p>
+                {isTyping && (
+                  <span className={`inline-block w-0.5 h-4 ml-1 animate-pulse align-middle ${isTemplateText ? 'bg-blue-600' : 'bg-teal-600'}`}>|</span>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -302,9 +325,48 @@ export default function WelcomeDashboard({
   const [displayedText, setDisplayedText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [showAnalysisOverlay, setShowAnalysisOverlay] = useState(false)
+  const [activeIntegration, setActiveIntegration] = useState<AIIntegration | null>(null)
+  const [isLoadingAI, setIsLoadingAI] = useState(false)
+  const [isTemplateText, setIsTemplateText] = useState(false)
+  const [isUsingCustomProfile, setIsUsingCustomProfile] = useState(false)
   const assistantButtonRef = useRef<HTMLButtonElement>(null)
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
+
+  // Load active AI integration on mount
+  useEffect(() => {
+    const loadActiveIntegration = () => {
+      const integrations = getAllIntegrations()
+      // Get enabled integrations, prefer the most recently used one
+      const enabledIntegrations = integrations.filter(i => i.enabled)
+      if (enabledIntegrations.length > 0) {
+        // Sort by lastUsed (most recent first), then by updatedAt
+        const sorted = enabledIntegrations.sort((a, b) => {
+          if (a.lastUsed && b.lastUsed) {
+            return b.lastUsed.getTime() - a.lastUsed.getTime()
+          }
+          if (a.lastUsed) return -1
+          if (b.lastUsed) return 1
+          return b.updatedAt.getTime() - a.updatedAt.getTime()
+        })
+        setActiveIntegration(sorted[0])
+      }
+    }
+    
+    loadActiveIntegration()
+    
+    // Listen for integration updates
+    const handleStorageChange = () => {
+      loadActiveIntegration()
+    }
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('integrations-updated', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('integrations-updated', handleStorageChange)
+    }
+  }, [])
 
   // Analysis templates for each KPI and analysis type
   const analysisTexts: AnalysisText[] = [
@@ -374,7 +436,7 @@ export default function WelcomeDashboard({
     startAnalysis(0, type!)
   }
 
-  const startAnalysis = (kpiIndex: number, type: AnalysisType) => {
+  const startAnalysis = async (kpiIndex: number, type: AnalysisType) => {
     if (kpiIndex >= kpis.length) {
       // Analysis complete
       endAnalysis()
@@ -382,12 +444,138 @@ export default function WelcomeDashboard({
     }
 
     setCurrentKpiIndex(kpiIndex)
-    const texts = analysisTexts[kpiIndex][type!]
     
     // Reset text for new KPI - start from scratch
     setDisplayedText('')
+    setIsLoadingAI(true)
+    setIsTemplateText(false) // Reset template flag
+    setIsUsingCustomProfile(false) // Reset profile indicator
+    
+    const currentKpi = kpis[kpiIndex]
+    
+    // Build prompt based on analysis type and KPI data
+    let prompt = ''
+    const analysisTypeLabels = {
+      overview: 'overview',
+      trends: 'trend analysis',
+      recommendations: 'recommendations',
+    }
+    
+    prompt = `You are an expert sustainability analyst. Provide a ${analysisTypeLabels[type!]} for the following KPI:
+
+KPI: ${currentKpi.title}
+Value: ${currentKpi.value.toLocaleString()}${currentKpi.unit ? ' ' + currentKpi.unit : ''}
+
+Please provide 2-3 concise, professional sentences. Be specific and actionable. Format your response as plain text without bullet points or numbering.`
+
+    try {
+      // Use AI integration if available, otherwise fall back to templates
+      if (activeIntegration && activeIntegration.enabled) {
+        // Get the default model for this integration
+        const defaultModel = activeIntegration.model || 'gpt-4'
+        
+        // Get userId for AI Agent Profile injection
+        // Try to get from localStorage, or use 'default-user' as fallback
+        const userId = typeof window !== 'undefined' 
+          ? localStorage.getItem('userId') || sessionStorage.getItem('userId') || 'default-user'
+          : 'default-user'
+        
+        // Ensure userId is stored for future use
+        if (typeof window !== 'undefined' && !localStorage.getItem('userId')) {
+          localStorage.setItem('userId', userId)
+        }
+        
+        console.log(`🔍 [WelcomeDashboard] Making AI call with userId: ${userId}`)
+        
+        const response = await aiClient.chat(
+          {
+            providerId: activeIntegration.providerId,
+            apiKey: activeIntegration.apiKey,
+            baseUrl: activeIntegration.baseUrl,
+            model: defaultModel,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert sustainability and carbon emissions analyst. Provide clear, concise, and actionable insights.',
+              },
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            maxTokens: 250, // Reduced for faster response and less API load
+            temperature: 0.7,
+            userId, // Explicitly pass userId for AI Agent Profile injection
+          },
+          activeIntegration.id
+        )
+
+        if (response.success && response.content) {
+          setIsLoadingAI(false)
+          setIsTemplateText(false) // This is AI-generated content (not template)
+          setIsUsingCustomProfile(true) // Profile was used (check server logs to confirm)
+          // Split AI response into sentences for typing effect
+          const sentences = response.content
+            .split(/[.!?]+/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0)
+            .map(s => s + '.')
+          
+          if (sentences.length > 0) {
+            // Type out all sentences one by one
+            let currentTextIndex = 0
+            let accumulatedText = ''
+            
+            const showNextText = () => {
+              if (currentTextIndex < sentences.length) {
+                const textToAdd = sentences[currentTextIndex]
+                typeTextAppend(textToAdd, accumulatedText, () => {
+                  accumulatedText += (accumulatedText ? ' ' : '') + textToAdd
+                  currentTextIndex++
+                  
+                  if (currentTextIndex < sentences.length) {
+                    // Wait a bit before showing next text
+                    setTimeout(showNextText, 800)
+                  }
+                })
+              }
+            }
+            
+            showNextText()
+          } else {
+            // Fallback to templates if AI response is empty
+            fallbackToTemplates(kpiIndex, type)
+          }
+        } else {
+          // Fallback to templates if AI request fails
+          console.warn('AI request failed, using templates:', response.error)
+          // Show user-friendly message if it's an overload error
+          if (response.error?.toLowerCase().includes('overloaded')) {
+            // Still show templates, but could add a notification here
+            console.warn('AI service overloaded, using template analysis')
+          }
+          fallbackToTemplates(kpiIndex, type)
+        }
+      } else {
+        // No active integration, use templates
+        setIsTemplateText(true) // Mark as template text
+        fallbackToTemplates(kpiIndex, type)
+      }
+    } catch (error) {
+      console.error('Error calling AI:', error)
+      // Fallback to templates on error
+      fallbackToTemplates(kpiIndex, type)
+    }
+  }
+
+  const fallbackToTemplates = (kpiIndex: number, type: AnalysisType) => {
+    setIsLoadingAI(false)
+    setIsTemplateText(true) // Mark as template text (will be displayed in blue)
+    setIsUsingCustomProfile(false) // No profile used when falling back to templates
+    const texts = analysisTexts[kpiIndex][type!]
     
     // Type out all text segments one by one, starting fresh
+    // Template text will be displayed in blue to distinguish from AI-generated
     let currentTextIndex = 0
     let accumulatedText = ''
     
@@ -490,7 +678,7 @@ export default function WelcomeDashboard({
     }, 25) // Adjust speed here (lower = faster)
   }
 
-  const handleNextKpi = () => {
+  const handleNextKpi = async () => {
     // Stop current typing if in progress
     if (typingIntervalRef.current) {
       clearInterval(typingIntervalRef.current)
@@ -503,7 +691,7 @@ export default function WelcomeDashboard({
     
     // Don't reset the bubble position - let it slide smoothly to the next KPI
     if (analysisType) {
-      startAnalysis(currentKpiIndex + 1, analysisType)
+      await startAnalysis(currentKpiIndex + 1, analysisType)
     }
   }
 
@@ -665,16 +853,19 @@ export default function WelcomeDashboard({
             currentKpiIndex={currentKpiIndex}
             displayedText={displayedText}
             isTyping={isTyping}
+            isLoadingAI={isLoadingAI}
+            isTemplateText={isTemplateText}
             currentKpiIndexTotal={kpis.length}
             onSkip={handleSkipAnalysis}
-            onNext={() => {
+            onNext={async () => {
                     if (currentKpiIndex >= kpis.length - 1) {
                       endAnalysis()
                     } else {
-                      handleNextKpi()
+                      await handleNextKpi()
                     }
                   }}
             textContainerRef={textContainerRef}
+            isUsingCustomProfile={isUsingCustomProfile}
           />
         </>
       )}

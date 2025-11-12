@@ -5,7 +5,7 @@
  * Supports Airtable, PostgreSQL, and in-memory storage.
  */
 
-export type PreferenceNamespace = 'ui' | 'table' | 'filters' | 'featureFlags' | 'misc'
+export type PreferenceNamespace = 'ui' | 'table' | 'filters' | 'featureFlags' | 'misc' | 'ai'
 export type PreferenceType = 'string' | 'number' | 'boolean' | 'json'
 export type PreferenceVisibility = 'private' | 'org' | 'global'
 

@@ -19,6 +19,7 @@ export interface ChatCompletionRequest {
   maxTokens?: number
   temperature?: number
   stream?: boolean
+  userId?: string // Optional user ID for AI Agent Profile injection
 }
 
 export interface ChatCompletionResponse {
@@ -63,6 +64,7 @@ export class AIService {
   private modelCache: Map<string, { models: string[], timestamp: number }> = new Map()
   private cacheTTL = 3600000 // 1 hour in milliseconds
   private registryService: any = null // Lazy-loaded AIModelRegistryService
+  private agentProfileService: any = null // Lazy-loaded AIAgentProfileService
 
   /**
    * Lazy-load AIModelRegistryService to avoid errors if Airtable is not configured
@@ -78,6 +80,98 @@ export class AIService {
       }
     }
     return this.registryService === false ? null : this.registryService
+  }
+
+  /**
+   * Lazy-load AIAgentProfileService to avoid errors if Preferences system is not configured
+   */
+  private getAgentProfileService(): any {
+    if (this.agentProfileService === null) {
+      try {
+        const { AIAgentProfileService } = require('./AIAgentProfileService')
+        this.agentProfileService = new AIAgentProfileService()
+      } catch (error) {
+        console.warn('AIAgentProfileService not available, using default behavior:', error)
+        this.agentProfileService = false // Mark as unavailable
+      }
+    }
+    return this.agentProfileService === false ? null : this.agentProfileService
+  }
+
+  /**
+   * Inject user's AI Agent Profile into system prompt
+   * Merges user preferences with existing system message
+   */
+  private async injectUserProfile(messages: ChatMessage[], userId?: string): Promise<ChatMessage[]> {
+    if (!userId) {
+      console.log(`⚠️  [AI Agent Profile] No userId provided, skipping profile injection`)
+      return messages // No user ID, return messages as-is
+    }
+    
+    console.log(`🔍 [AI Agent Profile] Attempting to inject profile for userId: ${userId}`)
+
+    const profileService = this.getAgentProfileService()
+    if (!profileService) {
+      console.warn(`⚠️  [AI Agent Profile] Profile service not available, skipping injection`)
+      return messages // Service not available, return as-is
+    }
+
+    try {
+      const { profileToSystemPrompt } = require('../types/AIAgentProfile')
+      const profile = await profileService.getProfile(userId)
+      const profileInstructions = profileToSystemPrompt(profile)
+
+      // Log profile injection for debugging
+      const hasCustomProfile = profile && Object.keys(profile).some(key => {
+        const defaultProfile = require('../types/AIAgentProfile').DEFAULT_AI_AGENT_PROFILE
+        return profile[key as keyof typeof profile] !== defaultProfile[key as keyof typeof defaultProfile]
+      })
+
+      if (hasCustomProfile) {
+        console.log(`🤖 [AI Agent Profile] Injecting custom profile for user ${userId}:`, {
+          tone: profile.tone,
+          detailLevel: profile.detailLevel,
+          responseStyle: profile.responseStyle,
+          domainFocus: profile.domainFocus,
+          hasCustomInstructions: !!profile.customInstructions,
+        })
+        console.log(`📋 [AI Agent Profile] Profile instructions preview:`, profileInstructions.substring(0, 200) + '...')
+      } else {
+        console.log(`🤖 [AI Agent Profile] Using default profile for user ${userId}`)
+      }
+
+      // Find existing system message
+      const systemMessageIndex = messages.findIndex(m => m.role === 'system')
+      
+      if (systemMessageIndex >= 0) {
+        // Merge with existing system message
+        const existingSystem = messages[systemMessageIndex]
+        const mergedContent = `${existingSystem.content}\n\n${profileInstructions}`
+        messages[systemMessageIndex] = {
+          role: 'system',
+          content: mergedContent,
+        }
+        if (hasCustomProfile) {
+          console.log(`📝 [AI Agent Profile] Merged profile instructions into existing system message`)
+          console.log(`   Original system message: "${existingSystem.content.substring(0, 100)}..."`)
+          console.log(`   Final system message length: ${mergedContent.length} chars`)
+        }
+      } else {
+        // Add new system message with profile instructions
+        messages.unshift({
+          role: 'system',
+          content: profileInstructions,
+        })
+        if (hasCustomProfile) {
+          console.log(`📝 [AI Agent Profile] Added new system message with profile instructions (${profileInstructions.length} chars)`)
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠️  [AI Agent Profile] Error injecting user profile for user ${userId}:`, error)
+      // Continue without profile injection on error
+    }
+
+    return messages
   }
 
   /**
@@ -447,6 +541,9 @@ export class AIService {
    */
   async chatAnthropic(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     try {
+      // Inject user profile into messages if userId is provided
+      const messagesWithProfile = await this.injectUserProfile([...request.messages], request.userId)
+
       const baseUrl = request.baseUrl || 'https://api.anthropic.com/v1'
       const url = `${baseUrl}/messages`
 
@@ -460,8 +557,8 @@ export class AIService {
       // Format messages for Anthropic
       // Anthropic uses content blocks (array), but simple string works for text
       // System messages go in a separate 'system' field
-      const systemMessage = request.messages.find(m => m.role === 'system')
-      const messagesWithoutSystem = request.messages
+      const systemMessage = messagesWithProfile.find(m => m.role === 'system')
+      const messagesWithoutSystem = messagesWithProfile
         .filter(m => m.role !== 'system')
         .map(msg => ({
           role: msg.role === 'assistant' ? 'assistant' : 'user', // Anthropic only has 'user' and 'assistant'
@@ -525,17 +622,23 @@ export class AIService {
    */
   async chatGoogle(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     try {
+      // Inject user profile into messages if userId is provided
+      const messagesWithProfile = await this.injectUserProfile([...request.messages], request.userId)
+
       const baseUrl = request.baseUrl || 'https://generativelanguage.googleapis.com/v1'
       // Gemini uses model name in the URL path
       // Available models: gemini-1.5-pro-latest, gemini-1.5-flash-latest, gemini-pro (legacy)
       // Use -latest suffix for latest stable versions
+      // Default to flash model (faster, less likely to be overloaded)
       let model = request.model || 'gemini-1.5-flash-latest'
       // Map legacy model names to current versions
       if (model === 'gemini-pro') {
-        model = 'gemini-1.5-flash-latest' // Use newer model as fallback
+        model = 'gemini-1.5-flash-latest' // Use flash (faster, less overloaded)
       } else if (model === 'gemini-1.5-flash') {
         model = 'gemini-1.5-flash-latest'
       } else if (model === 'gemini-1.5-pro') {
+        // If pro model is requested but we're getting overloaded, suggest flash
+        // For now, keep pro but could add fallback logic here
         model = 'gemini-1.5-pro-latest'
       }
       // Format: https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}
@@ -543,43 +646,60 @@ export class AIService {
 
       // Format messages for Gemini
       // Gemini uses a different format - it expects parts array
-      const contents = request.messages
-        .filter(m => m.role !== 'system') // System messages handled separately
-        .map(msg => ({
-          role: msg.role === 'assistant' ? 'model' : 'user', // Gemini uses 'model' instead of 'assistant'
-          parts: [{ text: msg.content }],
-        }))
+      // Note: systemInstruction is only supported in v1beta API, not v1
+      // For v1 API, we'll include system message content in the first user message
+      const systemMessage = request.messages.find(m => m.role === 'system')
+      const nonSystemMessages = request.messages.filter(m => m.role !== 'system')
+      
+      const contents = nonSystemMessages.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user', // Gemini uses 'model' instead of 'assistant'
+        parts: [{ text: msg.content }],
+      }))
+
+      // If we have a system message, include it in the first user message
+      // (v1beta supports systemInstruction field, but v1 doesn't)
+      if (systemMessage && contents.length > 0 && contents[0].role === 'user') {
+        // Prepend system instruction to the first user message
+        contents[0].parts[0].text = `${systemMessage.content}\n\n${contents[0].parts[0].text}`
+      } else if (systemMessage && contents.length === 0) {
+        // If only system message exists, convert it to a user message
+        contents.push({
+          role: 'user',
+          parts: [{ text: systemMessage.content }],
+        })
+      } else if (systemMessage && contents.length > 0 && contents[0].role === 'model') {
+        // If first message is from model, prepend a user message with system instruction
+        contents.unshift({
+          role: 'user',
+          parts: [{ text: systemMessage.content }],
+        })
+      }
 
       // Gemini requires at least one message
       if (contents.length === 0) {
         throw new Error('At least one user message is required')
       }
 
-      // Get system instruction if present
-      const systemMessage = request.messages.find(m => m.role === 'system')
-
       const body: any = {
         contents,
       }
 
-      // Gemini supports system instruction in generationConfig
-      if (systemMessage) {
-        body.systemInstruction = {
-          parts: [{ text: systemMessage.content }],
-        }
-      }
-
       // Add generation config
+      // Reduce maxTokens for faster responses and less load on API
       body.generationConfig = {}
       if (request.maxTokens) {
-        body.generationConfig.maxOutputTokens = request.maxTokens
+        // Cap at reasonable limit to reduce API load
+        body.generationConfig.maxOutputTokens = Math.min(request.maxTokens, 500)
+      } else {
+        // Default to lower token limit for welcome dashboard use case
+        body.generationConfig.maxOutputTokens = 300
       }
       if (request.temperature !== undefined) {
         body.generationConfig.temperature = request.temperature
       }
 
       // Retry logic for rate limiting and overload errors
-      const maxRetries = 3
+      const maxRetries = 2
       let lastError: Error | null = null
       
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -600,12 +720,17 @@ export class AIService {
             const isRateLimit = response.status === 429 || 
                                 errorMessage.toLowerCase().includes('overloaded') ||
                                 errorMessage.toLowerCase().includes('rate limit') ||
-                                errorMessage.toLowerCase().includes('quota')
+                                errorMessage.toLowerCase().includes('quota') ||
+                                errorMessage.toLowerCase().includes('resource exhausted')
             
             if (isRateLimit && attempt < maxRetries) {
-              // Exponential backoff: 2s, 4s, 8s
-              const delay = Math.min(2000 * Math.pow(2, attempt - 1), 10000)
-              console.log(`Google Gemini API overloaded (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`)
+              // Exponential backoff with jitter: 3s, 6s, 12s, 24s, 30s (max)
+              // Add random jitter (0-2s) to avoid thundering herd
+              const baseDelay = Math.min(3000 * Math.pow(2, attempt - 1), 30000)
+              const jitter = Math.random() * 2000
+              const delay = baseDelay + jitter
+              
+              console.log(`Google Gemini API overloaded (attempt ${attempt}/${maxRetries}), retrying in ${Math.round(delay)}ms...`)
               await new Promise(resolve => setTimeout(resolve, delay))
               continue
             }
@@ -651,10 +776,11 @@ export class AIService {
       // Provide user-friendly error messages
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       
-      if (errorMessage.toLowerCase().includes('overloaded')) {
+      if (errorMessage.toLowerCase().includes('overloaded') || 
+          errorMessage.toLowerCase().includes('resource exhausted')) {
         return {
           success: false,
-          error: 'Google Gemini API is currently overloaded. Please try again in a few moments. The system will automatically retry on your next request.',
+          error: 'Google Gemini API is currently overloaded. The system has retried multiple times. Please wait 30-60 seconds and try again, or consider using a different AI provider (OpenAI, Anthropic) from the Integration Marketplace.',
         }
       }
       

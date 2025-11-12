@@ -30,18 +30,41 @@ export interface PaginationParams {
 export interface StandardEmissionFactor {
   id: string
   Name?: string
-  Description?: string
-  Status?: 'Active' | 'Inactive'
-  'Emission Factor Version'?: string | string[]
-  'Emission Factor Version Name'?: string | string[]
-  'Emission Factor Set'?: string | string[]
-  'Emission Factor Set Name'?: string | string[]
-  'GHG TYPE'?: string | string[]
-  'GHG TYPE Name'?: string | string[]
-  'EF GWP'?: string | string[]
-  'EF GWP Name'?: string | string[]
+  Status?: 'Active' | 'Inactive' | string
+  'Emission Factors Dataset'?: string | string[]
+  'Emission Factors Dataset Name'?: string | string[]
+  'Emission Factor (CO2e)'?: number
+  'Type of EF'?: string
+  'GHG Unit (CO2e)'?: string | string[]
+  'GHG Unit (CO2e) Name'?: string | string[]
+  Created?: string
+  'Last Modified'?: string
+  'Industry Classification & Emission Factors'?: string | string[]
+  'Industry Classification & Emission Factors Name'?: string | string[]
+  Version?: string | string[]
+  'Version Name'?: string | string[]
+  'Publication Date'?: string
+  'Normalized activity'?: string | string[]
+  'Normalized activity Name'?: string | string[]
+  'Ref.IC'?: string | string[]
+  'Industry Classification'?: string | string[]
+  'Industry Classification Name'?: string | string[]
+  'Source UOM'?: string | string[]
+  'Source UOM Name'?: string | string[]
+  Scope?: string | string[]
+  'Scope Name'?: string | string[]
+  'Availability '?: string
+  'code (from Industry Classification  🏭)'?: string
+  'Name copy'?: string
+  ID?: number
+  'Activity Default UOM'?: string | string[]
+  'Activity Default UOM Name'?: string | string[]
   'EF/Detailed G'?: string | string[]
   'EF/Detailed G Name'?: string | string[]
+  'Dimension (from Source UOM)'?: string
+  'Status (from Version)'?: string
+  // Optional fields that may not exist in all bases
+  Description?: string
   Notes?: string
   createdAt?: string
   updatedAt?: string
@@ -51,25 +74,51 @@ export interface StandardEmissionFactor {
 
 export interface CreateStandardEmissionFactorDto {
   Name?: string
-  Description?: string
-  Status?: 'Active' | 'Inactive'
-  'Emission Factor Version'?: string | string[]
-  'Emission Factor Set'?: string | string[]
-  'GHG TYPE'?: string | string[]
-  'EF GWP'?: string | string[]
+  Status?: 'Active' | 'Inactive' | string
+  'Emission Factors Dataset'?: string | string[]
+  'Emission Factor (CO2e)'?: number
+  'Type of EF'?: string
+  'GHG Unit (CO2e)'?: string | string[]
+  'Industry Classification & Emission Factors'?: string | string[]
+  Version?: string | string[]
+  'Publication Date'?: string
+  'Normalized activity'?: string | string[]
+  'Ref.IC'?: string | string[]
+  'Industry Classification'?: string | string[]
+  'Source UOM'?: string | string[]
+  Scope?: string | string[]
+  'Availability '?: string
+  'Name copy'?: string
+  ID?: number
+  'Activity Default UOM'?: string | string[]
   'EF/Detailed G'?: string | string[]
+  // Optional fields
+  Description?: string
   Notes?: string
 }
 
 export interface UpdateStandardEmissionFactorDto {
   Name?: string
-  Description?: string
-  Status?: 'Active' | 'Inactive'
-  'Emission Factor Version'?: string | string[]
-  'Emission Factor Set'?: string | string[]
-  'GHG TYPE'?: string | string[]
-  'EF GWP'?: string | string[]
+  Status?: 'Active' | 'Inactive' | string
+  'Emission Factors Dataset'?: string | string[]
+  'Emission Factor (CO2e)'?: number
+  'Type of EF'?: string
+  'GHG Unit (CO2e)'?: string | string[]
+  'Industry Classification & Emission Factors'?: string | string[]
+  Version?: string | string[]
+  'Publication Date'?: string
+  'Normalized activity'?: string | string[]
+  'Ref.IC'?: string | string[]
+  'Industry Classification'?: string | string[]
+  'Source UOM'?: string | string[]
+  Scope?: string | string[]
+  'Availability '?: string
+  'Name copy'?: string
+  ID?: number
+  'Activity Default UOM'?: string | string[]
   'EF/Detailed G'?: string | string[]
+  // Optional fields
+  Description?: string
   Notes?: string
 }
 

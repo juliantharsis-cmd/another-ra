@@ -6,6 +6,7 @@ import { XMarkIcon } from './icons'
 import { getAllFeatureFlags, isFeatureEnabled, type FeatureFlag, setFeatureFlag, getFeatureFlagOverrides, clearFeatureFlag } from '@/lib/featureFlags'
 import Notification from './Notification'
 import IntegrationMarketplace from './IntegrationMarketplace'
+import { useDeveloperMode } from '@/contexts/DeveloperModeContext'
 
 interface FeatureFlagInfo {
   key: FeatureFlag
@@ -379,6 +380,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     // Initialize with default expanded sections
     return new Set(FEATURE_SECTIONS.filter(s => s.defaultExpanded).map(s => s.id))
   })
+  const { isDeveloperMode, toggleDeveloperMode } = useDeveloperMode()
 
   // Detect current preset mode based on feature flags
   const detectPresetMode = (flags: Record<FeatureFlag, boolean>): PresetMode => {
@@ -584,6 +586,38 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab === 'features' ? (
             <div className="space-y-4">
+              {/* Developer Mode Toggle */}
+              <div className="mb-6 p-4 border border-neutral-200 rounded-lg bg-neutral-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-sm font-semibold text-neutral-900">
+                        Developer Mode
+                      </h3>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                        isDeveloperMode
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-neutral-100 text-neutral-600'
+                      }`}>
+                        {isDeveloperMode ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-neutral-500">
+                      Enable developer tools to create tables from Airtable. When active, you'll see "+" buttons in the sidebar to add new tables.
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-4">
+                    <input
+                      type="checkbox"
+                      checked={isDeveloperMode}
+                      onChange={toggleDeveloperMode}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  </label>
+                </div>
+              </div>
+
               {/* Header Actions */}
               <div className="flex items-center justify-between mb-6">
                 <div>

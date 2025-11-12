@@ -21,7 +21,7 @@ Step-by-step guide to set up and test the User Preferences system.
 | Field Name | Type | Options/Notes |
 |------------|------|---------------|
 | User Id | Single line text | Required |
-| Namespace | Single select | Options: `ui`, `table`, `filters`, `featureFlags`, `misc` |
+| Namespace | Single select | Options: `ui`, `table`, `filters`, `featureFlags`, `misc`, `ai` |
 | Key | Single line text | Required |
 | Table Id | Single line text | Optional |
 | Scope Id | Single line text | Optional |

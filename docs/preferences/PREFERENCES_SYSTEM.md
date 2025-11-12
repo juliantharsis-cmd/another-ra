@@ -21,7 +21,7 @@ Create this table in your **System configuration** base.
 | Field Name | Type | Required | Description |
 |------------|------|----------|-------------|
 | User Id | Single line text | ✅ Yes | User identifier |
-| Namespace | Single select | ✅ Yes | `ui`, `table`, `filters`, `featureFlags`, `misc` |
+| Namespace | Single select | ✅ Yes | `ui`, `table`, `filters`, `featureFlags`, `misc`, `ai` |
 | Key | Single line text | ✅ Yes | Preference key (e.g., "columnWidths") |
 | Table Id | Single line text | ❌ No | Table-specific preference (e.g., "companies") |
 | Scope Id | Single line text | ❌ No | Scope-specific preference (e.g., view ID) |
@@ -62,7 +62,8 @@ if (baseTables.includes(tableName)) {
           { name: "table" }, 
           { name: "filters" }, 
           { name: "featureFlags" }, 
-          { name: "misc" }
+          { name: "misc" },
+          { name: "ai" }
         ] 
       } 
     },

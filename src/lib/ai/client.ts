@@ -17,6 +17,7 @@ export interface ChatCompletionOptions {
   messages: ChatMessage[]
   maxTokens?: number
   temperature?: number
+  userId?: string // Optional user ID for AI Agent Profile injection
 }
 
 export interface ChatCompletionResponse {
@@ -71,12 +72,30 @@ class AIClient {
    */
   async chat(options: ChatCompletionOptions, integrationId?: string): Promise<ChatCompletionResponse> {
     try {
+      // Get userId from localStorage if not provided
+      let userId = options.userId
+      if (!userId && typeof window !== 'undefined') {
+        userId = localStorage.getItem('userId') || sessionStorage.getItem('userId') || undefined
+      }
+
+      // Log for debugging
+      if (userId) {
+        console.log(`🔍 [AIClient] Making AI call with userId: ${userId}`)
+      } else {
+        console.warn(`⚠️  [AIClient] No userId found - AI Agent Profile will not be applied`)
+        console.log(`   localStorage.userId: ${localStorage.getItem('userId')}`)
+        console.log(`   sessionStorage.userId: ${sessionStorage.getItem('userId')}`)
+      }
+
       const response = await fetch(`${this.baseUrl}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(options),
+        body: JSON.stringify({
+          ...options,
+          userId, // Include userId for AI Agent Profile injection
+        }),
       })
 
       if (!response.ok) {

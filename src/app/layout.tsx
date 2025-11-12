@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import SpaceNavigation from '@/components/SpaceNavigation'
 import { NotificationProvider } from '@/contexts/NotificationContext'
+import { DeveloperModeProvider } from '@/contexts/DeveloperModeContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,12 +21,14 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <NotificationProvider>
-          <div className="min-h-screen bg-gray-50">
-            <SpaceNavigation />
-            <main className="container mx-auto px-4 py-8">
-              {children}
-            </main>
-          </div>
+          <DeveloperModeProvider>
+            <div className="min-h-screen bg-gray-50">
+              <SpaceNavigation />
+              <main className="container mx-auto px-4 py-8">
+                {children}
+              </main>
+            </div>
+          </DeveloperModeProvider>
         </NotificationProvider>
       </body>
     </html>

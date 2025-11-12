@@ -13,6 +13,7 @@ import {
   PreferenceQueryResult,
   PreferenceValidationError,
   PreferenceNotFoundError,
+  PreferenceNamespace,
 } from '../types/Preferences'
 import { getPreferencesAdapter } from '../adapters/preferences/PreferencesAdapterFactory'
 
@@ -72,8 +73,9 @@ export class PreferencesService {
       throw new PreferenceValidationError('userId is required and must be a string', 'userId')
     }
 
-    if (!record.namespace || !['ui', 'table', 'filters', 'featureFlags', 'misc'].includes(record.namespace)) {
-      throw new PreferenceValidationError('namespace must be one of: ui, table, filters, featureFlags, misc', 'namespace')
+    const validNamespaces: PreferenceNamespace[] = ['ui', 'table', 'filters', 'featureFlags', 'misc', 'ai']
+    if (!record.namespace || !validNamespaces.includes(record.namespace)) {
+      throw new PreferenceValidationError('namespace must be one of: ui, table, filters, featureFlags, misc, ai', 'namespace')
     }
 
     if (!record.key || typeof record.key !== 'string') {

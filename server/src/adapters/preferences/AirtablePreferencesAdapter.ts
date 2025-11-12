@@ -178,27 +178,51 @@ export class AirtablePreferencesAdapter implements IPreferencesAdapter {
       } catch (formulaError: any) {
         // If Unique Key formula doesn't exist yet, match manually
         console.log('⚠️  Unique Key formula field not found, using manual matching')
-        const conditions = [
-          `{User Id} = '${key.userId.replace(/'/g, "''")}'`,
-          `{Namespace} = '${key.namespace.replace(/'/g, "''")}'`,
-          `{Key} = '${key.key.replace(/'/g, "''")}'`,
-        ]
-        if (key.tableId) {
-          conditions.push(`{Table Id} = '${key.tableId.replace(/'/g, "''")}'`)
-        } else {
-          conditions.push(`{Table Id} = ''`)
+        
+        // Try to get all records and filter in memory as fallback
+        try {
+          const conditions = [
+            `{User Id} = '${key.userId.replace(/'/g, "''")}'`,
+            `{Namespace} = '${key.namespace.replace(/'/g, "''")}'`,
+            `{Key} = '${key.key.replace(/'/g, "''")}'`,
+          ]
+          if (key.tableId) {
+            conditions.push(`{Table Id} = '${key.tableId.replace(/'/g, "''")}'`)
+          } else {
+            conditions.push(`OR({Table Id} = '', ISBLANK({Table Id}))`)
+          }
+          if (key.scopeId) {
+            conditions.push(`{Scope Id} = '${key.scopeId.replace(/'/g, "''")}'`)
+          } else {
+            conditions.push(`OR({Scope Id} = '', ISBLANK({Scope Id}))`)
+          }
+          records = await this.base(this.tableName)
+            .select({
+              filterByFormula: `AND(${conditions.join(', ')})`,
+              maxRecords: 1,
+            })
+            .firstPage()
+        } catch (manualError: any) {
+          // If manual matching also fails, try fetching all and filtering in memory
+          console.warn('⚠️  Formula-based filtering failed, trying in-memory filtering:', manualError.message)
+          const allRecords: Airtable.Record<any>[] = []
+          await this.base(this.tableName)
+            .select({ maxRecords: 1000 }) // Limit to prevent memory issues
+            .eachPage((pageRecords, fetchNextPage) => {
+              allRecords.push(...pageRecords)
+              fetchNextPage()
+            })
+          
+          // Filter in memory
+          records = allRecords.filter(record => {
+            const fields = record.fields
+            return fields['User Id'] === key.userId &&
+                   fields['Namespace'] === key.namespace &&
+                   fields['Key'] === key.key &&
+                   (key.tableId ? fields['Table Id'] === key.tableId : !fields['Table Id']) &&
+                   (key.scopeId ? fields['Scope Id'] === key.scopeId : !fields['Scope Id'])
+          }).slice(0, 1)
         }
-        if (key.scopeId) {
-          conditions.push(`{Scope Id} = '${key.scopeId.replace(/'/g, "''")}'`)
-        } else {
-          conditions.push(`{Scope Id} = ''`)
-        }
-        records = await this.base(this.tableName)
-          .select({
-            filterByFormula: `AND(${conditions.join(', ')})`,
-            maxRecords: 1,
-          })
-          .firstPage()
       }
 
       if (records.length === 0) {

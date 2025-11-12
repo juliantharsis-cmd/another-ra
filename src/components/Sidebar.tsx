@@ -25,6 +25,8 @@ import SettingsModal from './SettingsModal'
 import UserPreferencesModal from './UserPreferencesModal'
 import NotificationCenter from './NotificationCenter'
 import { useNotifications } from '@/contexts/NotificationContext'
+import { useDeveloperMode } from '@/contexts/DeveloperModeContext'
+import TableCreationDialog from './TableCreationDialog'
 
 interface NavItem {
   name: string
@@ -74,6 +76,8 @@ const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
       ...(featureFlags.scopeCategorisation ? [{ name: 'Scope & Categorisation', Icon: DocumentIcon, path: '/spaces/emission-management/scope-categorisation' }] : []),
       ...(featureFlags.unit ? [{ name: 'Unit', Icon: DocumentIcon, path: '/spaces/emission-management/unit' }] : []),
       ...(featureFlags.unitConversion ? [{ name: 'Unit Conversion', Icon: DocumentIcon, path: '/spaces/emission-management/unit-conversion' }] : []),
+      { name: 'Activity Density', Icon: DocumentIcon, path: '/spaces/system-config/activity-density' },
+      { name: 'Keywords/Tags', Icon: DocumentIcon, path: '/spaces/system-config/keywords-tags' },
     ],
   },
   {
@@ -112,6 +116,9 @@ export default function Sidebar() {
   const [hoveredItemPosition, setHoveredItemPosition] = useState<number | null>(null)
   const isSubmenuHoveredRef = useRef(false)
   const { isCollapsed, toggleCollapse } = useSidebar()
+  const { isDeveloperMode } = useDeveloperMode()
+  const [isTableCreationDialogOpen, setIsTableCreationDialogOpen] = useState(false)
+  const [selectedSection, setSelectedSection] = useState<string | null>(null)
   
   // Get feature flags - use consistent defaults to avoid hydration mismatch
   // Load from localStorage only after mount
@@ -325,6 +332,19 @@ export default function Sidebar() {
               {item.badge}
             </span>
           )}
+          {isDeveloperMode && hasChildren && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedSection(item.name)
+                setIsTableCreationDialogOpen(true)
+              }}
+              className="ml-2 w-6 h-6 flex items-center justify-center rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors text-xs font-semibold"
+              title={`Add table to ${item.name}`}
+            >
+              +
+            </button>
+          )}
           {hasChildren && (
             <ChevronRightIcon
               className={`w-4 h-4 text-neutral-400 transition-transform duration-200 ${
@@ -512,6 +532,14 @@ export default function Sidebar() {
           onClose={() => setIsNotificationCenterOpen(false)}
         />
       )}
+      <TableCreationDialog
+        isOpen={isTableCreationDialogOpen}
+        onClose={() => {
+          setIsTableCreationDialogOpen(false)
+          setSelectedSection(null)
+        }}
+        targetSection={selectedSection}
+      />
       </div>
 
 
@@ -626,8 +654,8 @@ export default function Sidebar() {
                     }}
                     onMouseLeave={(e) => {
                       // Check if mouse is moving to another element in the submenu
-                      const relatedTarget = e.relatedTarget as HTMLElement
-                      if (relatedTarget && relatedTarget.closest('.submenu-container')) {
+                      const relatedTarget = e.relatedTarget as HTMLElement | null
+                      if (relatedTarget && relatedTarget instanceof HTMLElement && relatedTarget.closest('.submenu-container')) {
                         isSubmenuHoveredRef.current = true
                       } else {
                         // Small delay before setting to false
@@ -675,8 +703,8 @@ export default function Sidebar() {
                       }}
                       onMouseLeave={(e) => {
                         // Check if mouse is moving to another link in the submenu
-                        const relatedTarget = e.relatedTarget as HTMLElement
-                        if (relatedTarget && relatedTarget.closest('.submenu-container')) {
+                        const relatedTarget = e.relatedTarget as HTMLElement | null
+                        if (relatedTarget && relatedTarget instanceof HTMLElement && relatedTarget.closest('.submenu-container')) {
                           // Mouse is moving to another element in submenu, keep it open
                           isSubmenuHoveredRef.current = true
                         } else {

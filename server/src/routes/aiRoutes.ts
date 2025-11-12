@@ -36,6 +36,7 @@ router.post('/chat', async (req: Request, res: Response) => {
       messages,
       maxTokens,
       temperature,
+      userId, // Optional: user ID for AI Agent Profile injection
     } = req.body
 
     // Validate required fields
@@ -54,6 +55,16 @@ router.post('/chat', async (req: Request, res: Response) => {
       })
     }
 
+    // Get userId from request body, query params, or headers (for future auth integration)
+    const finalUserId = userId || req.query.userId as string || req.headers['x-user-id'] as string
+
+    // Log userId for debugging
+    if (finalUserId) {
+      console.log(`🔍 [AI Route] Received AI chat request with userId: ${finalUserId}`)
+    } else {
+      console.warn(`⚠️  [AI Route] No userId provided - AI Agent Profile will not be applied`)
+    }
+
     const request: ChatCompletionRequest = {
       providerId,
       apiKey,
@@ -62,6 +73,7 @@ router.post('/chat', async (req: Request, res: Response) => {
       messages,
       maxTokens,
       temperature,
+      userId: finalUserId, // Pass userId to AI service for profile injection
     }
 
     const response = await aiService.chat(request)

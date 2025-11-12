@@ -2,8 +2,7 @@
 
 import { ReactNode } from 'react'
 
-export default function
-  // SidebarProvider is now at the spaces/layout.tsx level GHGTypeLayout({
+export default function GHGTypeLayout({
   children,
 }: {
   children: ReactNode
