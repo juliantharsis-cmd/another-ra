@@ -1,18 +1,15 @@
 'use client'
 
-import { SidebarProvider } from '@/components/SidebarContext'
-
 export default function CompaniesLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   // This layout ensures the companies page uses full screen without container constraints
+  // SidebarProvider is now at the spaces/layout.tsx level
   return (
-    <SidebarProvider>
-      <div style={{ margin: 0, padding: 0, position: 'relative' }}>
-        {children}
-      </div>
-    </SidebarProvider>
+    <div style={{ margin: 0, padding: 0, position: 'relative' }}>
+      {children}
+    </div>
   )
 }

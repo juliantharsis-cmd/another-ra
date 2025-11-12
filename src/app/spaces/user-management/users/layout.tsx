@@ -1,6 +1,5 @@
 'use client'
 
-import { SidebarProvider } from '@/components/SidebarContext'
 import { ReactNode } from 'react'
 
 export default function UsersLayout({
@@ -8,10 +7,11 @@ export default function UsersLayout({
 }: {
   children: ReactNode
 }) {
+  // SidebarProvider is now at the spaces/layout.tsx level
   return (
-    <SidebarProvider>
+    <>
       {children}
-    </SidebarProvider>
+    </>
   )
 }
 

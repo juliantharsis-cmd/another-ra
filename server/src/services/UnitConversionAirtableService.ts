@@ -64,7 +64,20 @@ export class UnitConversionAirtableService {
         formula = `AND(${conditions.join(', ')})`
       }
 
-      const selectOptions: Airtable.SelectOptions<any> = {}
+      const selectOptions: Airtable.SelectOptions<any> = {
+        // Explicitly include all fields that exist in Airtable
+        // Note: Description, Activity Density, Status, Notes are optional and may not exist in all bases
+        fields: [
+          'Name',
+          'Unit to convert',
+          'Dimension (from Unit to convert)',
+          'Normalized unit',
+          'Dimension (from Normalized unit)',
+          'Value',
+          'Conversion value',
+          'Type',
+        ],
+      }
       if (formula) {
         selectOptions.filterByFormula = formula
       }
@@ -191,7 +204,17 @@ export class UnitConversionAirtableService {
   private async mapAirtableToUnitConversion(record: Airtable.Record<any>): Promise<UnitConversion> {
     const fields = record.fields
     
-    // Resolve Activity Density relationship
+    // Resolve Unit to convert relationship (links to Unit table)
+    const unitToConvertNames = fields['Unit to convert']
+      ? await this.relationshipResolver.resolveLinkedRecords(fields['Unit to convert'], 'Unit', 'Name')
+      : []
+    
+    // Resolve Normalized unit relationship (links to Unit table)
+    const normalizedUnitNames = fields['Normalized unit']
+      ? await this.relationshipResolver.resolveLinkedRecords(fields['Normalized unit'], 'Unit', 'Name')
+      : []
+    
+    // Resolve Activity Density relationship (if exists)
     const activityDensityNames = fields['Activity Density']
       ? await this.relationshipResolver.resolveLinkedRecords(fields['Activity Density'], 'Activity Density', 'Name')
       : []
@@ -199,14 +222,25 @@ export class UnitConversionAirtableService {
     return {
       id: record.id,
       Name: fields['Name'] || '',
-      'Unit to convert': fields['Unit to convert'] || '',
-      'Normalized unit': fields['Normalized unit'] || '',
-      'Conversion factor': fields['Conversion factor'] || undefined,
-      Description: fields['Description'] || '',
+      'Unit to convert': fields['Unit to convert'] || undefined,
+      'Unit to convert Name': unitToConvertNames.map(r => r.name),
+      'Dimension (from Unit to convert)': Array.isArray(fields['Dimension (from Unit to convert)']) 
+        ? fields['Dimension (from Unit to convert)'].join(', ') 
+        : (fields['Dimension (from Unit to convert)'] || undefined),
+      'Normalized unit': fields['Normalized unit'] || undefined,
+      'Normalized unit Name': normalizedUnitNames.map(r => r.name),
+      'Dimension (from Normalized unit)': Array.isArray(fields['Dimension (from Normalized unit)']) 
+        ? fields['Dimension (from Normalized unit)'].join(', ') 
+        : (fields['Dimension (from Normalized unit)'] || undefined),
+      Value: fields['Value'] !== undefined && fields['Value'] !== null ? Number(fields['Value']) : undefined,
+      'Conversion value': fields['Conversion value'] !== undefined && fields['Conversion value'] !== null ? Number(fields['Conversion value']) : undefined,
+      Type: fields['Type'] || undefined,
+      // Optional fields that may not exist in all Airtable bases
+      Description: fields['Description'] || undefined,
       'Activity Density': fields['Activity Density'] || undefined,
       'Activity Density Name': activityDensityNames.map(r => r.name),
-      Status: fields['Status'] || 'Active',
-      Notes: fields['Notes'] || '',
+      Status: fields['Status'] || undefined,
+      Notes: fields['Notes'] || undefined,
       createdAt: this.formatDate(record._rawJson.createdTime),
       updatedAt: this.formatDate(record._rawJson.lastModifiedTime),
       createdBy: this.getCreatedBy(fields),
@@ -220,22 +254,32 @@ export class UnitConversionAirtableService {
     if (dto.Name !== undefined && dto.Name !== null && String(dto.Name).trim() !== '') {
       fields['Name'] = String(dto.Name).trim()
     }
-    if (dto['Unit to convert'] !== undefined && dto['Unit to convert'] !== null && String(dto['Unit to convert']).trim() !== '') {
-      fields['Unit to convert'] = String(dto['Unit to convert']).trim()
+    if (dto['Unit to convert'] !== undefined) {
+      fields['Unit to convert'] = Array.isArray(dto['Unit to convert']) 
+        ? dto['Unit to convert'] 
+        : [dto['Unit to convert']]
     }
-    if (dto['Normalized unit'] !== undefined && dto['Normalized unit'] !== null && String(dto['Normalized unit']).trim() !== '') {
-      fields['Normalized unit'] = String(dto['Normalized unit']).trim()
+    // Dimension fields are lookup fields (read-only), so we don't write them
+    if (dto['Normalized unit'] !== undefined) {
+      fields['Normalized unit'] = Array.isArray(dto['Normalized unit']) 
+        ? dto['Normalized unit'] 
+        : [dto['Normalized unit']]
     }
-    if (dto['Conversion factor'] !== undefined && dto['Conversion factor'] !== null) {
-      fields['Conversion factor'] = Number(dto['Conversion factor'])
+    // Dimension fields are lookup fields (read-only), so we don't write them
+    if (dto.Value !== undefined && dto.Value !== null) {
+      fields['Value'] = Number(dto.Value)
+    }
+    if (dto['Conversion value'] !== undefined && dto['Conversion value'] !== null) {
+      fields['Conversion value'] = Number(dto['Conversion value'])
+    }
+    if (dto.Type !== undefined && dto.Type !== null && String(dto.Type).trim() !== '') {
+      fields['Type'] = String(dto.Type).trim()
     }
     if (dto.Description !== undefined && dto.Description !== null && String(dto.Description).trim() !== '') {
       fields['Description'] = String(dto.Description).trim()
     }
     if (dto.Status !== undefined && dto.Status !== null) {
       fields['Status'] = String(dto.Status).trim()
-    } else if (!('Status' in dto)) {
-      fields['Status'] = 'Active'
     }
     if (dto['Activity Density'] !== undefined) {
       fields['Activity Density'] = Array.isArray(dto['Activity Density']) 

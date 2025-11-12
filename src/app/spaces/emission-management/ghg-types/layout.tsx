@@ -1,17 +1,17 @@
 'use client'
 
-import { SidebarProvider } from '@/components/SidebarContext'
 import { ReactNode } from 'react'
 
-export default function GHGTypeLayout({
+export default function
+  // SidebarProvider is now at the spaces/layout.tsx level GHGTypeLayout({
   children,
 }: {
   children: ReactNode
 }) {
   return (
-    <SidebarProvider>
+    <div style={{ margin: 0, padding: 0, position: 'relative' }}>
       {children}
-    </SidebarProvider>
+    </div>
   )
 }
 

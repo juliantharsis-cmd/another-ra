@@ -1,18 +1,16 @@
 'use client'
 
-import { SidebarProvider } from '@/components/SidebarContext'
-
 export default function UnitLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // SidebarProvider is now at the spaces/layout.tsx level
   return (
-    <SidebarProvider>
-      <div style={{ margin: 0, padding: 0, position: 'relative' }}>
+    <div style={{ margin: 0, padding: 0, position: 'relative' }}>
         {children}
       </div>
-    </SidebarProvider>
+    
   )
 }
 

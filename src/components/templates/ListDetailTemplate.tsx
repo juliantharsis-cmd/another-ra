@@ -465,6 +465,8 @@ export default function ListDetailTemplate<T extends { id: string }>({
       'User Roles': 'User Roles Name',
       'Modules': 'ModulesName',
       'Scope': 'ScopeName',
+      'Unit to convert': 'Unit to convert Name',
+      'Normalized unit': 'Normalized unit Name',
       // Add other linked record mappings as needed
     }
     
@@ -1803,7 +1805,9 @@ export default function ListDetailTemplate<T extends { id: string }>({
         const resolvedKey = column.key === 'Company' ? 'CompanyName' :
                            column.key === 'User Roles' ? 'User Roles Name' :
                            column.key === 'Modules' ? 'ModulesName' :
-                           column.key === 'Scope' ? 'ScopeName' : null
+                           column.key === 'Scope' ? 'ScopeName' :
+                           column.key === 'Unit to convert' ? 'Unit to convert Name' :
+                           column.key === 'Normalized unit' ? 'Normalized unit Name' : null
         if (resolvedKey) {
           const resolvedValue = (item as any)[resolvedKey]
           if (resolvedValue) {

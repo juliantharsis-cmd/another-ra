@@ -1,7 +1,7 @@
 'use client'
 
 import Sidebar from '@/components/Sidebar'
-import { SidebarProvider, useSidebar } from '@/components/SidebarContext'
+import { useSidebar } from '@/components/SidebarContext'
 import Link from 'next/link'
 import { BuildingIcon, GlobeIcon, LeafIcon, DocumentIcon, SettingsIcon } from '@/components/icons'
 
@@ -69,10 +69,7 @@ function SystemConfigContent() {
 }
 
 export default function SystemConfigPage() {
-  return (
-    <SidebarProvider>
-      <SystemConfigContent />
-    </SidebarProvider>
-  )
+  // SidebarProvider is now at the spaces/layout.tsx level
+  return <SystemConfigContent />
 }
 

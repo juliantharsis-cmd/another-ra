@@ -1,16 +1,15 @@
 'use client'
 
-import { SidebarProvider } from '@/components/SidebarContext'
-
 export default function GeographyLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // SidebarProvider is now at the spaces/layout.tsx level
   return (
-    <SidebarProvider>
+    <>
       {children}
-    </SidebarProvider>
+    </>
   )
 }
 

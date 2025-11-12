@@ -8,7 +8,35 @@ This document outlines strategies for creating multiple tables in bulk while pre
 
 ## Common Bugs Observed & Prevention Strategies
 
-### 0. **filterByFormula Bug** ⚠️ CRITICAL
+### 0. **Missing Fields Bug** ⚠️ CRITICAL
+
+**Bug:** Fields exist in Airtable but are not mapped in the application, causing data loss or missing functionality.
+
+**Root Cause:** Manual field mapping is error-prone and easy to miss fields, especially lookup fields and less obvious fields.
+
+**Prevention Strategy:**
+```bash
+# ✅ ALWAYS run field validation script before and after implementation
+npx tsx server/src/scripts/validateTableFields.ts "Table Name"
+```
+
+This script will:
+- List all fields in Airtable
+- Compare with application type file
+- Identify missing fields
+- Provide recommendations for field types
+
+**Checklist:**
+- [ ] Run validation script **before** creating types
+- [ ] Run validation script **after** implementing service
+- [ ] Run validation script **after** implementing frontend config
+- [ ] Verify all Airtable fields are mapped
+- [ ] Handle lookup fields as readonly (they're auto-resolved by Airtable)
+- [ ] Handle linked record fields with both ID and Name fields
+
+---
+
+### 1. **filterByFormula Bug** ⚠️ CRITICAL
 
 **Bug:** `Airtable: invalid parameters for 'select': the value for 'filterByFormula' should be a string`
 
@@ -280,11 +308,23 @@ panel: {
 
 ### Step-by-Step Checklist
 
+#### Phase 0: Field Discovery (CRITICAL - DO THIS FIRST)
+- [ ] **0.1** Run field validation script
+  ```bash
+  npx tsx server/src/scripts/validateTableFields.ts "Table Name"
+  ```
+- [ ] **0.2** Document all Airtable fields
+  - [ ] List all field names
+  - [ ] Identify field types (text, number, linked record, lookup)
+  - [ ] Note which fields are linked records (need resolution)
+  - [ ] Note which fields are lookup fields (read-only, auto-resolved)
+
 #### Phase 1: Backend Setup
 - [ ] **1.1** Create type file (`server/src/types/TableName.ts`)
-  - [ ] Define main interface with all fields
+  - [ ] Define main interface with **ALL** fields from Airtable
   - [ ] Include relationship name fields (e.g., `RelatedTableName?: string | string[]`)
-  - [ ] Define CreateDto and UpdateDto interfaces
+  - [ ] Include lookup fields as readonly strings
+  - [ ] Define CreateDto and UpdateDto interfaces (exclude lookup fields from DTOs)
   
 - [ ] **1.2** Create service file (`server/src/services/TableNameAirtableService.ts`)
   - [ ] Use lazy initialization pattern (no constructor instantiation)
