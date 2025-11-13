@@ -55,6 +55,7 @@ const geographyApiClient = {
 export const geographyConfig: ListDetailTemplateConfig<Geography> = {
   entityName: 'Geography',
   entityNamePlural: 'Geography',
+  description: 'Manage geographic regions and locations. Define geographic boundaries, regions, and location data used for regional emission tracking and reporting.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

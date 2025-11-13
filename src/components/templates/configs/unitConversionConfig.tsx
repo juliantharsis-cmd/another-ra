@@ -50,6 +50,7 @@ const unitConversionApiClient = {
 export const unitConversionConfig: ListDetailTemplateConfig<UnitConversion> = {
   entityName: 'Unit Conversion',
   entityNamePlural: 'Unit Conversions',
+  description: 'Manage unit conversion factors and formulas. Define conversion rates between different measurement units to standardize data across various unit systems.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

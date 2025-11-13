@@ -135,6 +135,7 @@ const aiModelRegistryApiClient = {
 export const aiModelRegistryConfig: ListDetailTemplateConfig<AIModel> = {
   entityName: 'AI Model',
   entityNamePlural: 'AI Models',
+  description: 'Manage AI model registry and configurations. Track available AI models from different providers (OpenAI, Anthropic, Google), their availability status, and recommended usage.',
   defaultSort: {
     field: 'sortOrder',
     order: 'asc',

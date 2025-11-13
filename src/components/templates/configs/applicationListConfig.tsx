@@ -54,6 +54,7 @@ const applicationListApiClient = {
 export const applicationListConfig: ListDetailTemplateConfig<ApplicationList> = {
   entityName: 'Application List',
   entityNamePlural: 'Application Lists',
+  description: 'Manage the list of applications and spaces available in the system. Configure application names, status, order, and alternative URLs for navigation.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

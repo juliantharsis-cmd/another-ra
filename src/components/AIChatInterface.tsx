@@ -7,11 +7,15 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { usePathname } from 'next/navigation'
 import { aiClient, ChatMessage } from '@/lib/ai/client'
 import { AIIntegration } from '@/lib/integrations/types'
 import { getAllIntegrations } from '@/lib/integrations/storage'
+import { gatherPageContext, formatContextAsSystemMessage } from '@/lib/ai/context'
 import Notification from './Notification'
+import { XMarkIcon } from './icons'
+import { useTypewriter } from '@/hooks/useTypewriter'
 
 interface AIChatInterfaceProps {
   integration?: AIIntegration
@@ -20,7 +24,8 @@ interface AIChatInterfaceProps {
 }
 
 export default function AIChatInterface({ integration, onClose, className = '' }: AIChatInterfaceProps) {
-  const [messages, setMessages] = useState<Array<ChatMessage & { id: string; timestamp: Date }>>([])
+  const pathname = usePathname()
+  const [messages, setMessages] = useState<Array<ChatMessage & { id: string; timestamp: Date; isTyping?: boolean }>>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | undefined>(integration?.id)
@@ -28,6 +33,21 @@ export default function AIChatInterface({ integration, onClose, className = '' }
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const typingMessageIdRef = useRef<string | null>(null)
+  
+  // Track if we've sent the initial context message and the pathname it was sent for
+  const contextSentRef = useRef<string | null>(null)
+  
+  // Memoize context gathering to avoid recalculating on every render
+  const pageContext = useMemo(() => {
+    const userId = typeof window !== 'undefined' 
+      ? localStorage.getItem('userId') || sessionStorage.getItem('userId') || undefined
+      : undefined
+    return gatherPageContext(pathname, userId)
+  }, [pathname])
+  
+  // Memoize context message to avoid reformatting
+  const contextMessage = useMemo(() => formatContextAsSystemMessage(pageContext), [pageContext])
 
   // Function to load and filter integrations
   const loadIntegrations = () => {
@@ -101,6 +121,9 @@ export default function AIChatInterface({ integration, onClose, className = '' }
     }
   }, [])
 
+  // Note: We don't reset contextSentRef here because we check pathname equality in handleSend
+  // This allows us to update context when pathname changes during a conversation
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -163,6 +186,76 @@ export default function AIChatInterface({ integration, onClose, className = '' }
         }
       }
 
+      // Build messages array with context (using memoized values)
+      const messageHistory = messages.map(m => ({ role: m.role, content: m.content }))
+      
+      // Check if we need to update context (pathname changed or first message)
+      const needsContextUpdate = contextSentRef.current !== pathname
+      
+      // Debug logging (can be removed in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🤖 [Chatbot Context]', {
+          pathname,
+          needsContextUpdate,
+          contextMessage: contextMessage.substring(0, 100) + '...',
+          pageContext: {
+            space: pageContext.space,
+            tableName: pageContext.tableName,
+            pageType: pageContext.pageType,
+            pageTitle: pageContext.pageTitle,
+          }
+        })
+      }
+      
+      // Add context as system message if needed
+      let messagesToSend: ChatMessage[]
+      if (needsContextUpdate) {
+        // Pathname changed or first message - include/update context as system message
+        // Remove any existing system messages and add the new one
+        const messagesWithoutSystem = messageHistory.filter(m => m.role !== 'system')
+        messagesToSend = [
+          { role: 'system', content: contextMessage },
+          ...messagesWithoutSystem,
+          userMessage,
+        ]
+        contextSentRef.current = pathname
+        
+        // Debug: Log what we're sending
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📤 [Chatbot] Sending context update:', {
+            systemMessageLength: contextMessage.length,
+            totalMessages: messagesToSend.length,
+            hasSystemMessage: messagesToSend.some(m => m.role === 'system'),
+          })
+        }
+      } else {
+        // Context already sent for this pathname, just add user message
+        messagesToSend = [...messageHistory, userMessage]
+        
+        // Ensure system message is still included
+        const hasSystemMessage = messagesToSend.some(m => m.role === 'system')
+        if (!hasSystemMessage) {
+          // If somehow system message is missing, add it
+          messagesToSend = [
+            { role: 'system', content: contextMessage },
+            ...messagesToSend,
+          ]
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ [Chatbot] System message was missing, re-added')
+          }
+        }
+      }
+      
+      // Limit message history to prevent token bloat (keep last 20 messages + system)
+      // This prevents excessive token usage in long conversations
+      const MAX_MESSAGES = 20
+      if (messagesToSend.length > MAX_MESSAGES + 1) { // +1 for system message
+        const systemMsg = messagesToSend.find(m => m.role === 'system')
+        const nonSystemMessages = messagesToSend.filter(m => m.role !== 'system')
+        const recentMessages = nonSystemMessages.slice(-MAX_MESSAGES)
+        messagesToSend = systemMsg ? [systemMsg, ...recentMessages] : recentMessages
+      }
+
       // Make API call
       const response = await aiClient.chat(
         {
@@ -170,7 +263,7 @@ export default function AIChatInterface({ integration, onClose, className = '' }
           apiKey: currentIntegration.apiKey,
           baseUrl: currentIntegration.baseUrl,
           model: defaultModel,
-          messages: [...messages.map(m => ({ role: m.role, content: m.content })), userMessage],
+          messages: messagesToSend,
           maxTokens: 1024,
           temperature: 0.7,
         },
@@ -182,12 +275,15 @@ export default function AIChatInterface({ integration, onClose, className = '' }
           role: 'assistant',
           content: response.content,
         }
+        const messageId = `assistant-${Date.now()}`
+        typingMessageIdRef.current = messageId
         setMessages(prev => [
           ...prev,
           {
             ...assistantMessage,
-            id: `assistant-${Date.now()}`,
+            id: messageId,
             timestamp: new Date(),
+            isTyping: true, // Mark as typing to enable typewriter effect
           },
         ])
       } else {
@@ -247,10 +343,10 @@ export default function AIChatInterface({ integration, onClose, className = '' }
   return (
     <div className={`flex flex-col h-full bg-white rounded-lg border border-neutral-200 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-neutral-50">
+      <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-neutral-50 flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
@@ -296,9 +392,7 @@ export default function AIChatInterface({ integration, onClose, className = '' }
               className="p-1 text-neutral-400 hover:text-neutral-600 transition-colors"
               title="Close"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <XMarkIcon className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -316,23 +410,18 @@ export default function AIChatInterface({ integration, onClose, className = '' }
           </div>
         ) : (
           messages.map((message) => (
-            <div
+            <MessageBubble
               key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                  message.role === 'user'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-neutral-900 border border-neutral-200'
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-green-100' : 'text-neutral-400'}`}>
-                  {message.timestamp.toLocaleTimeString()}
-                </p>
-              </div>
-            </div>
+              message={message}
+              onTypingComplete={() => {
+                if (message.id === typingMessageIdRef.current) {
+                  setMessages(prev => prev.map(m => 
+                    m.id === message.id ? { ...m, isTyping: false } : m
+                  ))
+                  typingMessageIdRef.current = null
+                }
+              }}
+            />
           ))
         )}
         {isLoading && (
@@ -393,6 +482,49 @@ export default function AIChatInterface({ integration, onClose, className = '' }
           onClose={() => setNotification(null)}
         />
       )}
+    </div>
+  )
+}
+
+// Message Bubble Component with typewriter effect for assistant messages
+function MessageBubble({ 
+  message, 
+  onTypingComplete 
+}: { 
+  message: ChatMessage & { id: string; timestamp: Date; isTyping?: boolean }
+  onTypingComplete: () => void
+}) {
+  const shouldType = message.role === 'assistant' && message.isTyping
+  const { displayedText, isTyping } = useTypewriter({
+    text: message.content,
+    speed: 50, // 50 characters per second
+    enabled: shouldType,
+    onComplete: onTypingComplete,
+  })
+  
+  const displayContent = shouldType ? displayedText : message.content
+  
+  return (
+    <div
+      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+    >
+      <div
+        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+          message.role === 'user'
+            ? 'bg-green-600 text-white'
+            : 'bg-white text-neutral-900 border border-neutral-200'
+        }`}
+      >
+        <p className="text-sm whitespace-pre-wrap break-words">
+          {displayContent}
+          {isTyping && (
+            <span className="inline-block w-2 h-4 bg-neutral-400 ml-1 animate-pulse" />
+          )}
+        </p>
+        <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-green-100' : 'text-neutral-400'}`}>
+          {message.timestamp.toLocaleTimeString()}
+        </p>
+      </div>
     </div>
   )
 }

@@ -27,6 +27,7 @@ export interface UserPreferences {
   defaultPageSize: number // Default rows per page (10, 25, 50, 100)
   defaultSortField?: string
   defaultSortOrder: 'asc' | 'desc'
+  sidebarLayout?: 'sidebarFooter' | 'topBanner' // Layout for sidebar buttons
   
   // Metadata
   createdAt?: string
@@ -45,6 +46,7 @@ export interface CreateUserPreferencesDto {
   defaultPageSize?: number
   defaultSortField?: string
   defaultSortOrder?: 'asc' | 'desc'
+  sidebarLayout?: 'sidebarFooter' | 'topBanner'
 }
 
 export interface UpdateUserPreferencesDto extends CreateUserPreferencesDto {}
@@ -78,6 +80,7 @@ export function getDefaultPreferences(
     inAppAlerts: true,
     defaultPageSize: 25,
     defaultSortOrder: 'asc',
+    sidebarLayout: 'topBanner',
   }
 }
 

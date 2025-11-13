@@ -56,6 +56,7 @@ const ghgTypeApiClient = {
 export const ghgTypeConfig: ListDetailTemplateConfig<GHGType> = {
   entityName: 'GHG Type',
   entityNamePlural: 'GHG Types',
+  description: 'Manage greenhouse gas types and their classifications. Define different GHG categories (CO2, CH4, N2O, etc.) and their properties for emission calculations.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

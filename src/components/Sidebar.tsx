@@ -19,14 +19,18 @@ import {
   ShareIcon,
   BellIcon,
   UserIcon,
+  AIAssistantIcon,
 } from './icons'
 import { isFeatureEnabled, getAllFeatureFlags } from '@/lib/featureFlags'
 import SettingsModal from './SettingsModal'
 import UserPreferencesModal from './UserPreferencesModal'
 import NotificationCenter from './NotificationCenter'
+import ChatbotModal from './ChatbotModal'
 import { useNotifications } from '@/contexts/NotificationContext'
 import { useDeveloperMode } from '@/contexts/DeveloperModeContext'
 import TableCreationDialog from './TableCreationDialog'
+import { useUserPreferences } from '@/hooks/useUserPreferences'
+import SpaceSwitcher from './SpaceSwitcher'
 
 interface NavItem {
   name: string
@@ -36,8 +40,19 @@ interface NavItem {
   children?: NavItem[]
 }
 
-// Helper function to get nav items - accepts feature flags to avoid hydration mismatch
-const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
+// Helper function to detect current space from pathname
+const detectSpace = (pathname: string): 'system-config' | 'admin' | 'other' => {
+  if (pathname.startsWith('/spaces/system-config')) {
+    return 'system-config'
+  }
+  if (pathname.startsWith('/spaces/admin')) {
+    return 'admin'
+  }
+  return 'other'
+}
+
+// System Configuration space navigation items
+const getSystemConfigNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
   { name: 'Home Space', Icon: HomeIcon, path: '/' },
   {
     name: 'Organization structure',
@@ -87,26 +102,105 @@ const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
     ],
   },
   { name: 'Sustainability Actions', Icon: LeafIcon, path: '/spaces/system-config/sustainability' },
-  ...(featureFlags.applicationList ? [{
+  ...(featureFlags.integrations ? [{
     name: 'Application Settings',
     Icon: SettingsIcon,
     children: [
-      { name: 'Application List', Icon: SettingsIcon, path: '/spaces/admin/application-list' },
-      ...(featureFlags.integrations ? [
-        { name: 'Integrations', Icon: SettingsIcon, path: '/spaces/system-config/integration-marketplace' },
-        { name: 'AI Model Registry', Icon: SettingsIcon, path: '/spaces/system-config/ai-model-registry' },
-      ] : []),
+      { name: 'Integrations', Icon: SettingsIcon, path: '/spaces/system-config/integration-marketplace' },
+      { name: 'AI Model Registry', Icon: SettingsIcon, path: '/spaces/system-config/ai-model-registry' },
+      ...(featureFlags.applicationList ? [{ name: 'Application List', Icon: SettingsIcon, path: '/spaces/admin/application-list' }] : []),
     ],
   }] : []),
 ]
 
+// Administration space navigation items
+const getAdminNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
+  { name: 'Home Space', Icon: HomeIcon, path: '/' },
+  // Future admin sections can be added here as they're created
+  // {
+  //   name: 'System Settings',
+  //   Icon: SettingsIcon,
+  //   path: '/spaces/admin/system-settings',
+  // },
+  // {
+  //   name: 'Audit Trail',
+  //   Icon: DocumentIcon,
+  //   path: '/spaces/admin/audit-trail',
+  // },
+]
+
+// Helper function to get nav items based on current space
+const getNavItems = (pathname: string, featureFlags: Record<string, boolean>): NavItem[] => {
+  const space = detectSpace(pathname)
+  
+  switch (space) {
+    case 'system-config':
+      return getSystemConfigNavItems(featureFlags)
+    case 'admin':
+      return getAdminNavItems(featureFlags)
+    default:
+      // Default to system-config navigation for other routes
+      return getSystemConfigNavItems(featureFlags)
+  }
+}
+
+// Helper function to get space title
+const getSpaceTitle = (pathname: string): string => {
+  const space = detectSpace(pathname)
+  
+  switch (space) {
+    case 'system-config':
+      return 'System configuration space'
+    case 'admin':
+      return 'Administration space'
+    default:
+      return 'System configuration space'
+  }
+}
+
+// Helper function to get space icon letter
+const getSpaceIconLetter = (pathname: string): string => {
+  const space = detectSpace(pathname)
+  
+  switch (space) {
+    case 'system-config':
+      return 'S'
+    case 'admin':
+      return 'A'
+    default:
+      return 'S'
+  }
+}
+
 export default function Sidebar() {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Organization structure', 'User management', 'Emission management', 'Reference Data', 'ECM Management', 'Application Settings'])
+  const sidebarRef = useRef<HTMLDivElement>(null)
+  // Initialize expanded items based on current space
+  const getInitialExpandedItems = (pathname: string): string[] => {
+    const space = detectSpace(pathname)
+    if (space === 'admin') {
+      return ['Application Management']
+    }
+    return ['Organization structure', 'User management', 'Emission management', 'Reference Data', 'ECM Management', 'Application Settings']
+  }
+  
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    if (typeof window === 'undefined') {
+      return ['Organization structure', 'User management', 'Emission management', 'Reference Data', 'ECM Management']
+    }
+    return getInitialExpandedItems(pathname)
+  })
+  
+  // Update expanded items when space changes
+  useEffect(() => {
+    const newExpandedItems = getInitialExpandedItems(pathname)
+    setExpandedItems(newExpandedItems)
+  }, [pathname])
   const [isMounted, setIsMounted] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isUserPreferencesOpen, setIsUserPreferencesOpen] = useState(false)
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false)
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false)
   const { unreadCount } = useNotifications()
   const [shouldAnimateIn, setShouldAnimateIn] = useState(false)
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
@@ -117,6 +211,10 @@ export default function Sidebar() {
   const { isDeveloperMode } = useDeveloperMode()
   const [isTableCreationDialogOpen, setIsTableCreationDialogOpen] = useState(false)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
+  const [isSpaceSwitcherOpen, setIsSpaceSwitcherOpen] = useState(false)
+  const { preferences } = useUserPreferences()
+  const sidebarLayout = preferences?.sidebarLayout || 'topBanner'
+  const showButtonsInSidebar = sidebarLayout === 'sidebarFooter'
   
   // Get feature flags - use consistent defaults to avoid hydration mismatch
   // Load from localStorage only after mount
@@ -179,7 +277,9 @@ export default function Sidebar() {
     }
   }, [])
   
-  const navItems = getNavItems(featureFlags)
+  const navItems = getNavItems(pathname, featureFlags)
+  const spaceTitle = getSpaceTitle(pathname)
+  const spaceIconLetter = getSpaceIconLetter(pathname)
 
   // Check if we're transitioning from home page (only animate on initial entry)
   useEffect(() => {
@@ -364,6 +464,7 @@ export default function Sidebar() {
     <>
       {/* Main Sidebar */}
       <div 
+      ref={sidebarRef}
       className={`fixed left-0 top-0 h-screen bg-white border-r border-neutral-200 flex flex-col z-30 shadow-sm sidebar-main ${
         isCollapsed ? 'w-16' : 'w-64'
       } ${shouldAnimateIn ? 'animate-slide-in-from-left' : ''}`}
@@ -382,29 +483,31 @@ export default function Sidebar() {
       <div className={`p-4 border-b border-neutral-200 bg-neutral-50 ${isCollapsed ? 'px-2' : ''}`}>
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <Link
-              href="/"
-              className="flex items-center space-x-3 hover:opacity-80 transition-opacity group flex-1"
-            >
-              <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center text-white font-bold shadow-sm">
-                S
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-neutral-900 group-hover:text-green-600 transition-colors">
-                  System configuration space
+            <div className="flex items-center space-x-3 group flex-1">
+              <button
+                onClick={() => setIsSpaceSwitcherOpen(true)}
+                className="flex items-center space-x-3 hover:opacity-80 transition-opacity flex-1"
+              >
+                <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center text-white font-bold shadow-sm hover:bg-green-600 transition-colors cursor-pointer">
+                  {spaceIconLetter}
                 </div>
-              </div>
-            </Link>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-neutral-900 group-hover:text-green-600 transition-colors">
+                    {spaceTitle}
+                  </div>
+                </div>
+              </button>
+            </div>
           )}
           {isCollapsed && (
-            <Link
-              href="/"
+            <button
+              onClick={() => setIsSpaceSwitcherOpen(true)}
               className="flex items-center justify-center hover:opacity-80 transition-opacity"
             >
-              <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center text-white font-bold shadow-sm">
-                S
+              <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center text-white font-bold shadow-sm hover:bg-green-600 transition-colors cursor-pointer">
+                {spaceIconLetter}
               </div>
-            </Link>
+            </button>
           )}
         </div>
       </div>
@@ -430,79 +533,122 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className={`p-4 border-t border-neutral-200 bg-neutral-50 flex ${isCollapsed ? 'flex-col items-center space-y-2' : 'items-center justify-between'}`}>
-        {isFeatureEnabled('userPreferences') && (
-          <button
-            onClick={() => setIsUserPreferencesOpen(true)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer group ${
-              isUserPreferencesOpen
-                ? 'bg-green-100 border-green-500'
-                : 'bg-neutral-300 border-transparent hover:bg-green-100 hover:border-green-500'
+        {/* AI Assistant - First icon with engaging animation */}
+        {isFeatureEnabled('chatbot') && (
+          <button 
+            onClick={() => setIsChatbotOpen(true)}
+            className={`relative p-2.5 rounded-lg transition-all duration-300 group ${
+              isChatbotOpen 
+                ? 'bg-teal-100 shadow-md' 
+                : 'bg-gradient-to-br from-teal-50 to-teal-100/50 hover:from-teal-100 hover:to-teal-100 shadow-sm hover:shadow-md'
             }`}
-            title="User Preferences"
+            title="AI Assistant - Ask me anything"
           >
-            <UserIcon
-              className={`w-5 h-5 transition-colors ${
-                isUserPreferencesOpen
-                  ? 'text-green-600'
-                  : 'text-neutral-600 group-hover:text-green-600'
-              }`}
-            />
+            {/* Subtle pulse animation on hover - similar to welcome page */}
+            <span className="absolute inset-0 rounded-lg bg-teal-400 opacity-0 group-hover:opacity-30 animate-ping" style={{ animationDuration: '1.5s' }}></span>
+            
+            {/* Glow effect when active */}
+            {isChatbotOpen && (
+              <span className="absolute inset-0 rounded-lg bg-teal-400 opacity-20 animate-pulse" style={{ animationDuration: '2s' }}></span>
+            )}
+            
+            {/* Icon with gentle breathing animation when not active */}
+            <div className={`relative z-10 ${!isChatbotOpen ? 'animate-pulse' : ''}`} style={{ animationDuration: '2.5s' }}>
+              <AIAssistantIcon className={`w-6 h-6 transition-transform group-hover:scale-110 ${isChatbotOpen ? 'scale-110' : ''}`} />
+            </div>
+            
+            {/* Active indicator dot with glow */}
+            {isChatbotOpen && (
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-teal-500 rounded-full animate-pulse shadow-sm shadow-teal-500/50"></span>
+            )}
+            
+            {/* Subtle "AI" badge when not active - makes it clear it's an agent */}
+            {!isChatbotOpen && !isCollapsed && (
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 bg-teal-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                AI
+              </span>
+            )}
           </button>
         )}
-        {!isCollapsed && (
+        
+        {/* Conditionally render buttons based on sidebarLayout preference */}
+        {showButtonsInSidebar && (
           <>
-            <button className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" title="Share">
-              <ShareIcon className="w-5 h-5" />
-            </button>
-            {isFeatureEnabled('notifications') && (
-              <button 
-                onClick={() => setIsNotificationCenterOpen(true)}
-                className="relative p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
-                title="Notifications"
+            {isFeatureEnabled('userPreferences') && (
+              <button
+                onClick={() => setIsUserPreferencesOpen(true)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer group ${
+                  isUserPreferencesOpen
+                    ? 'bg-green-100 border-green-500'
+                    : 'bg-neutral-300 border-transparent hover:bg-green-100 hover:border-green-500'
+                }`}
+                title="User Preferences"
               >
-              <BellIcon className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[10px] font-semibold text-white bg-green-600 rounded-full">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-            </button>
+                <UserIcon
+                  className={`w-5 h-5 transition-colors ${
+                    isUserPreferencesOpen
+                      ? 'text-green-600'
+                      : 'text-neutral-600 group-hover:text-green-600'
+                  }`}
+                />
+              </button>
             )}
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
-              title="Settings"
-            >
-              <SettingsIcon className="w-5 h-5" />
-            </button>
-          </>
-        )}
-        {isCollapsed && (
-          <>
-            <button className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" title="Share">
-              <ShareIcon className="w-5 h-5" />
-            </button>
-            {isFeatureEnabled('notifications') && (
-              <button 
-                onClick={() => setIsNotificationCenterOpen(true)}
-                className="relative p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
-                title="Notifications"
-              >
-              <BellIcon className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[10px] font-semibold text-white bg-green-600 rounded-full">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
+            {!isCollapsed && (
+              <>
+                <button className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" title="Share">
+                  <ShareIcon className="w-5 h-5" />
+                </button>
+                {isFeatureEnabled('notifications') && (
+                  <button 
+                    onClick={() => setIsNotificationCenterOpen(true)}
+                    className="relative p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
+                    title="Notifications"
+                  >
+                  <BellIcon className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[10px] font-semibold text-white bg-green-600 rounded-full">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                </button>
                 )}
-            </button>
+                <button 
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
+                  title="Settings"
+                >
+                  <SettingsIcon className="w-5 h-5" />
+                </button>
+              </>
             )}
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
-              title="Settings"
-            >
-              <SettingsIcon className="w-5 h-5" />
-            </button>
+            {isCollapsed && (
+              <>
+                <button className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" title="Share">
+                  <ShareIcon className="w-5 h-5" />
+                </button>
+                {isFeatureEnabled('notifications') && (
+                  <button 
+                    onClick={() => setIsNotificationCenterOpen(true)}
+                    className="relative p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
+                    title="Notifications"
+                  >
+                  <BellIcon className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-0.5 right-0.5 flex items-center justify-center min-w-[14px] h-[14px] px-0.5 text-[10px] font-semibold text-white bg-green-600 rounded-full">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                </button>
+                )}
+                <button 
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="p-2 text-neutral-600 hover:bg-neutral-200 rounded-lg transition-colors" 
+                  title="Settings"
+                >
+                  <SettingsIcon className="w-5 h-5" />
+                </button>
+              </>
+            )}
           </>
         )}
       </div>
@@ -530,6 +676,24 @@ export default function Sidebar() {
           onClose={() => setIsNotificationCenterOpen(false)}
         />
       )}
+
+      {/* Chatbot Modal */}
+      {isFeatureEnabled('chatbot') && (
+        <ChatbotModal
+          isOpen={isChatbotOpen}
+          onClose={() => setIsChatbotOpen(false)}
+        />
+      )}
+
+      {/* Space Switcher */}
+      <SpaceSwitcher
+        isOpen={isSpaceSwitcherOpen}
+        onClose={() => setIsSpaceSwitcherOpen(false)}
+        currentSpaceLetter={spaceIconLetter}
+        sidebarRef={sidebarRef}
+        isCollapsed={isCollapsed}
+      />
+
       <TableCreationDialog
         isOpen={isTableCreationDialogOpen}
         onClose={() => {

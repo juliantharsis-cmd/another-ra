@@ -50,6 +50,7 @@ const standardECMCatalogApiClient = {
 export const standardECMCatalogConfig: ListDetailTemplateConfig<StandardECMCatalog> = {
   entityName: 'Standard ECM Catalog',
   entityNamePlural: 'Standard ECM Catalogs',
+  description: 'Manage the standard Energy Conservation Measure (ECM) catalog. Define and categorize energy efficiency measures and conservation strategies.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

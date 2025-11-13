@@ -50,6 +50,7 @@ const scopeApiClient = {
 export const scopeConfig: ListDetailTemplateConfig<Scope> = {
   entityName: 'Scope',
   entityNamePlural: 'Scopes',
+  description: 'Manage emission scopes (Scope 1, 2, and 3) for categorizing greenhouse gas emissions according to GHG Protocol standards.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

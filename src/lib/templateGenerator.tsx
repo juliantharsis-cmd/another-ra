@@ -15,6 +15,7 @@ import { autoGenerateFilters, mergeFilters } from './autoGenerateFilters'
 export function generateTableConfig<T extends { id: string }>(params: {
   entityName: string
   entityNamePlural: string
+  description?: string
   fields: FieldConfig[]
   columns: ColumnConfig[]
   apiClient: ApiClient<T>
@@ -30,6 +31,7 @@ export function generateTableConfig<T extends { id: string }>(params: {
   const {
     entityName,
     entityNamePlural,
+    description,
     fields,
     columns,
     apiClient,
@@ -81,6 +83,7 @@ export function generateTableConfig<T extends { id: string }>(params: {
   const config: ListDetailTemplateConfig<T> = {
     entityName,
     entityNamePlural,
+    description,
     columns,
     fields,
     filters: allFilters || [], // Ensure filters is always an array

@@ -50,6 +50,7 @@ const scopeCategorisationApiClient = {
 export const scopeCategorisationConfig: ListDetailTemplateConfig<ScopeCategorisation> = {
   entityName: 'Scope & Categorisation',
   entityNamePlural: 'Scope & Categorisations',
+  description: 'Manage scope categorizations that combine emission scopes with activity categories for detailed emission tracking and reporting.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

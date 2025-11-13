@@ -235,6 +235,56 @@ export class ApplicationListAirtableService {
   }
 
   /**
+   * Helper function to check if an error is retryable (network errors)
+   */
+  private isRetryableError(error: any): boolean {
+    const retryableCodes = ['ECONNRESET', 'ENOTFOUND', 'ETIMEDOUT', 'ECONNREFUSED', 'EAI_AGAIN']
+    const retryableMessages = ['timeout', 'network', 'connection']
+    
+    if (error.code && retryableCodes.includes(error.code)) {
+      return true
+    }
+    
+    if (error.message) {
+      const messageLower = error.message.toLowerCase()
+      return retryableMessages.some(msg => messageLower.includes(msg))
+    }
+    
+    return false
+  }
+
+  /**
+   * Retry wrapper for Airtable API calls with exponential backoff
+   */
+  private async retryWithBackoff<T>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+  ): Promise<T> {
+    let lastError: any
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation()
+      } catch (error: any) {
+        lastError = error
+        
+        // Only retry on network errors
+        if (!this.isRetryableError(error) || attempt === maxRetries) {
+          throw error
+        }
+        
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = baseDelay * Math.pow(2, attempt - 1)
+        console.log(`⚠️ Network error (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`, error.code || error.message)
+        await new Promise(resolve => setTimeout(resolve, delay))
+      }
+    }
+    
+    throw lastError
+  }
+
+  /**
    * Get paginated Application List records from Airtable
    */
   async findPaginated(
@@ -252,9 +302,6 @@ export class ApplicationListAirtableService {
       const endRecordIndex = offset + limit
       const startPage = Math.floor(startRecordIndex / 100) + 1
       const endPage = Math.ceil(endRecordIndex / 100)
-      
-      let allRecords: Airtable.Record<any>[] = []
-      let currentPage = 0
       
       const sortField = sortBy && sortBy.trim() !== '' ? this.mapFieldNameToAirtable(sortBy) : 'Name'
       const sortDirection = sortOrder === 'desc' ? 'desc' : 'asc'
@@ -294,45 +341,52 @@ export class ApplicationListAirtableService {
         console.log(`   Applying filter formula: ${filterFormula}`)
       }
       
-      // Fetch only the pages we need
-      await new Promise<void>((resolve, reject) => {
-        const selectOptions: any = {
-          sort: [{ field: sortField, direction: sortDirection }],
-          pageSize: 100,
-        }
+      // Fetch only the pages we need with retry logic for network errors
+      let allRecords: Airtable.Record<any>[] = []
+      await this.retryWithBackoff(async () => {
+        // Reset state for each retry attempt
+        allRecords = []
+        let currentPage = 0
         
-        if (filterFormula) {
-          selectOptions.filterByFormula = filterFormula
-        }
-        
-        this.base(this.tableName)
-          .select(selectOptions)
-          .eachPage(
-            (records, fetchNextPage) => {
-              currentPage++
-              
-              if (currentPage < startPage) {
+        return new Promise<void>((resolve, reject) => {
+          const selectOptions: any = {
+            sort: [{ field: sortField, direction: sortDirection }],
+            pageSize: 100,
+          }
+          
+          if (filterFormula) {
+            selectOptions.filterByFormula = filterFormula
+          }
+          
+          this.base(this.tableName)
+            .select(selectOptions)
+            .eachPage(
+              (records, fetchNextPage) => {
+                currentPage++
+                
+                if (currentPage < startPage) {
+                  fetchNextPage()
+                  return
+                }
+                
+                allRecords.push(...records)
+                
+                if (currentPage >= endPage) {
+                  resolve()
+                  return
+                }
+                
                 fetchNextPage()
-                return
+              },
+              (err) => {
+                if (err) {
+                  reject(err)
+                } else {
+                  resolve()
+                }
               }
-              
-              allRecords.push(...records)
-              
-              if (currentPage >= endPage) {
-                resolve()
-                return
-              }
-              
-              fetchNextPage()
-            },
-            (err) => {
-              if (err) {
-                reject(err)
-              } else {
-                resolve()
-              }
-            }
-          )
+            )
+        })
       })
       
       const startIndexInFetched = startRecordIndex % 100
@@ -341,13 +395,13 @@ export class ApplicationListAirtableService {
       
       console.log(`✅ Fetched ${paginatedRecords.length} records from pages ${startPage}-${endPage}`)
       
-      // Get total count
+      // Get total count with retry logic
       let total: number
       if (filterFormula) {
-        total = await this.getFilteredCount(filterFormula)
+        total = await this.retryWithBackoff(() => this.getFilteredCount(filterFormula))
         console.log(`   Filtered total count: ${total}`)
       } else {
-        total = await this.getTotalCount(true)
+        total = await this.retryWithBackoff(() => this.getTotalCount(true))
       }
 
       return {
@@ -357,11 +411,17 @@ export class ApplicationListAirtableService {
     } catch (error: any) {
       console.error('❌ Error fetching paginated Application List from Airtable:', error)
       
+      // Handle specific Airtable errors
       if (error.error === 'NOT_AUTHORIZED' || error.statusCode === 403) {
         throw new Error(`Airtable authentication failed (403). The table "${this.tableName}" may not exist or the API token may not have access to it.`)
       }
       if (error.error === 'NOT_FOUND' || error.statusCode === 404) {
         throw new Error(`Airtable table not found (404). Table "${this.tableName}" does not exist in base.`)
+      }
+      
+      // Handle network errors with user-friendly message
+      if (this.isRetryableError(error)) {
+        throw new Error(`Network connection error: Unable to reach Airtable API. Please check your internet connection and try again. (${error.code || 'Network error'})`)
       }
       
       throw new Error(`Failed to fetch Application List: ${error.error || error.message || 'Unknown error'}`)

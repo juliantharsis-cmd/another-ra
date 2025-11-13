@@ -50,6 +50,7 @@ const normalizedActivityApiClient = {
 export const normalizedActivityConfig: ListDetailTemplateConfig<NormalizedActivity> = {
   entityName: 'Normalized Activity',
   entityNamePlural: 'Normalized Activities',
+  description: 'Manage normalized activity data used for emission calculations. Standardize activity measurements across different units and measurement systems.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

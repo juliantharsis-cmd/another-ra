@@ -160,6 +160,7 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
         inAppAlerts: true,
         defaultPageSize: 25,
         defaultSortOrder: 'asc',
+        sidebarLayout: 'topBanner',
       }
       setPreferences(defaultPrefs)
       setOriginalPreferences(defaultPrefs)
@@ -781,6 +782,48 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
                                   className="mr-2 text-green-600 focus:ring-green-500"
                                 />
                                 <span className="text-sm text-neutral-700">Descending (Z-A)</span>
+                              </label>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-neutral-700 mb-2">
+                              Sidebar Layout
+                            </label>
+                            <p className="text-xs text-neutral-500 mb-3">
+                              Choose where to display user preferences, share, notifications, and settings buttons. Moving them to the top banner gives more room for the AI assistant button.
+                            </p>
+                            <div className="flex flex-col gap-3">
+                              <label className="flex items-start p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition-colors">
+                                <input
+                                  type="radio"
+                                  name="sidebarLayout"
+                                  value="sidebarFooter"
+                                  checked={(preferences.sidebarLayout || 'topBanner') === 'sidebarFooter'}
+                                  onChange={(e) => handleChange('sidebarLayout', e.target.value)}
+                                  className="mt-0.5 mr-3 text-green-600 focus:ring-green-500"
+                                />
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-neutral-900">Sidebar Footer</div>
+                                  <div className="text-xs text-neutral-500 mt-0.5">
+                                    All buttons (including AI assistant) appear in the sidebar footer
+                                  </div>
+                                </div>
+                              </label>
+                              <label className="flex items-start p-3 border border-neutral-300 rounded-lg cursor-pointer hover:bg-neutral-50 transition-colors">
+                                <input
+                                  type="radio"
+                                  name="sidebarLayout"
+                                  value="topBanner"
+                                  checked={preferences.sidebarLayout === 'topBanner'}
+                                  onChange={(e) => handleChange('sidebarLayout', e.target.value)}
+                                  className="mt-0.5 mr-3 text-green-600 focus:ring-green-500"
+                                />
+                                <div className="flex-1">
+                                  <div className="text-sm font-medium text-neutral-900">Top Banner</div>
+                                  <div className="text-xs text-neutral-500 mt-0.5">
+                                    User preferences, share, notifications, and settings move to top right banner. AI assistant stays in sidebar with more room.
+                                  </div>
+                                </div>
                               </label>
                             </div>
                           </div>

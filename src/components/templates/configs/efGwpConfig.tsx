@@ -53,6 +53,7 @@ const efGwpApiClient = {
 export const efGwpConfig: ListDetailTemplateConfig<EFGWP> = {
   entityName: 'EF GWP',
   entityNamePlural: 'EF GWP',
+  description: 'Manage emission factors and Global Warming Potential (GWP) values. Track emission factors with their associated GWP multipliers for converting different greenhouse gases to CO2 equivalent.',
   defaultSort: {
     field: 'factor_name',
     order: 'asc',

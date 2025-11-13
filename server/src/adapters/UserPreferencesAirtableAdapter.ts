@@ -47,6 +47,7 @@ export class UserPreferencesAirtableAdapter {
       defaultPageSize: fields['Default Page Size'] ?? 25,
       defaultSortField: fields['Default Sort Field'] || undefined,
       defaultSortOrder: fields['Default Sort Order'] || 'asc',
+      sidebarLayout: fields['Sidebar Layout'] || 'sidebarFooter',
       createdAt: fields['Created At'] ? new Date(fields['Created At']).toISOString() : undefined,
       updatedAt: fields['Last Modified'] ? new Date(fields['Last Modified']).toISOString() : undefined,
     }
@@ -93,6 +94,9 @@ export class UserPreferencesAirtableAdapter {
     }
     if (preferences.defaultSortOrder !== undefined) {
       fields['Default Sort Order'] = preferences.defaultSortOrder
+    }
+    if (preferences.sidebarLayout !== undefined) {
+      fields['Sidebar Layout'] = preferences.sidebarLayout
     }
 
     return fields

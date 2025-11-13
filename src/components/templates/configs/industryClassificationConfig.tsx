@@ -163,6 +163,7 @@ const industryClassificationColumns = [
 export const industryClassificationConfig: ListDetailTemplateConfig<IndustryClassification> = generateTableConfig({
   entityName: 'Industry Factor',
   entityNamePlural: 'Industry Factors',
+  description: 'Manage industry classification factors and categories. Define industry-specific emission factors and classification schemes for sector-based emission calculations.',
   fields: industryClassificationFields,
   columns: industryClassificationColumns,
   apiClient: industryClassificationApiClient,

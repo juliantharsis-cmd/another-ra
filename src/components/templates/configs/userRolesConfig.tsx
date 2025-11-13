@@ -116,6 +116,7 @@ const userRolesColumns = [
 export const userRolesConfig: ListDetailTemplateConfig<UserRole> = generateTableConfig({
   entityName: 'User Role',
   entityNamePlural: 'User Roles',
+  description: 'Manage user roles and permissions. Define role-based access control (RBAC) settings, permissions, and access levels for different user types.',
   fields: userRolesFields,
   columns: userRolesColumns,
   apiClient: userRolesApiClient,

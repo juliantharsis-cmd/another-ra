@@ -29,6 +29,7 @@ type FeatureFlag =
   | 'industryClassification'
   | 'welcomeDashboard'
   | 'aiAssistant'
+  | 'chatbot'
   | 'notifications'
   | 'integrations'
   | 'normalizedActivities'
@@ -65,6 +66,7 @@ const featureFlags: Record<FeatureFlag, boolean> = {
   industryClassification: process.env.NEXT_PUBLIC_FEATURE_INDUSTRY_CLASSIFICATION === 'true' || true, // Default to true
   welcomeDashboard: process.env.NEXT_PUBLIC_FEATURE_WELCOME_DASHBOARD === 'true' || true, // Default to true
   aiAssistant: process.env.NEXT_PUBLIC_FEATURE_AI_ASSISTANT === 'true' || true, // Default to true
+  chatbot: process.env.NEXT_PUBLIC_FEATURE_CHATBOT === 'true' || true, // Default to true
   notifications: process.env.NEXT_PUBLIC_FEATURE_NOTIFICATIONS === 'true' || true, // Default to true
   integrations: process.env.NEXT_PUBLIC_FEATURE_INTEGRATIONS === 'true' || true, // Default to true
   normalizedActivities: process.env.NEXT_PUBLIC_FEATURE_NORMALIZED_ACTIVITIES === 'true' || true, // Default to true

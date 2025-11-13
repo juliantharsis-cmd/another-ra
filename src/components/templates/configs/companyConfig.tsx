@@ -58,6 +58,7 @@ const companyApiClient = {
 export const companyConfig: ListDetailTemplateConfig<Company> = {
   entityName: 'Company',
   entityNamePlural: 'Companies',
+  description: 'Manage company records and organizational information. Track company details, industry classifications, activities, and operational status.',
   defaultSort: {
     field: 'companyName',
     order: 'asc',

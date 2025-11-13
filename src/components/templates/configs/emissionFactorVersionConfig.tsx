@@ -55,6 +55,7 @@ const emissionFactorVersionApiClient = {
 export const emissionFactorVersionConfig: ListDetailTemplateConfig<EmissionFactorVersion> = {
   entityName: 'Emission Factor Version',
   entityNamePlural: 'Emission Factor Versions',
+  description: 'Manage different versions of emission factors used for calculating greenhouse gas emissions. Track version history, status, and categorization of emission factor data.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

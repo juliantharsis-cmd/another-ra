@@ -477,7 +477,7 @@ export class AIService {
     baseUrl?: string
   ): Promise<{ model: string; availableModels: string[] } | null> {
     const fallbackModels: Record<string, string[]> = {
-      google: ['gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-pro'],
+      google: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'],
       openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo'],
       anthropic: ['claude-3-haiku-20240307', 'claude-3-sonnet-20240229', 'claude-3-opus-20240229'],
     }
@@ -627,19 +627,20 @@ export class AIService {
 
       const baseUrl = request.baseUrl || 'https://generativelanguage.googleapis.com/v1'
       // Gemini uses model name in the URL path
-      // Available models: gemini-1.5-pro-latest, gemini-1.5-flash-latest, gemini-pro (legacy)
-      // Use -latest suffix for latest stable versions
+      // Available models for v1 API: gemini-1.5-pro, gemini-1.5-flash, gemini-pro (legacy)
+      // Note: -latest suffix is NOT supported in v1 API, only in v1beta
       // Default to flash model (faster, less likely to be overloaded)
-      let model = request.model || 'gemini-1.5-flash-latest'
-      // Map legacy model names to current versions
+      let model = request.model || 'gemini-1.5-flash'
+      // Map legacy and -latest model names to current v1 API versions
       if (model === 'gemini-pro') {
-        model = 'gemini-1.5-flash-latest' // Use flash (faster, less overloaded)
-      } else if (model === 'gemini-1.5-flash') {
-        model = 'gemini-1.5-flash-latest'
+        model = 'gemini-1.5-flash' // Use flash (faster, less overloaded)
+      } else if (model === 'gemini-1.5-flash-latest') {
+        model = 'gemini-1.5-flash' // Remove -latest suffix for v1 API
+      } else if (model === 'gemini-1.5-pro-latest') {
+        model = 'gemini-1.5-pro' // Remove -latest suffix for v1 API
       } else if (model === 'gemini-1.5-pro') {
-        // If pro model is requested but we're getting overloaded, suggest flash
-        // For now, keep pro but could add fallback logic here
-        model = 'gemini-1.5-pro-latest'
+        // Keep as-is for v1 API
+        model = 'gemini-1.5-pro'
       }
       // Format: https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}
       const url = `${baseUrl}/models/${model}:generateContent?key=${encodeURIComponent(request.apiKey)}`

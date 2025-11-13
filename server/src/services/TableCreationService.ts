@@ -521,19 +521,137 @@ export default router
    */
   private generateTemplateConfigCode(options: TableCreationOptions, schema: any): string {
     const configName = this.toCamelCase(options.tableName) + 'Config'
+    const entityName = this.toPascalCase(options.tableName)
+    const entityNamePlural = entityName + 's' // Simple pluralization - can be improved
 
     return `/**
  * ListDetailTemplate Configuration for ${options.tableName}
  * Auto-generated config
  */
 
-import { ListDetailConfig } from '../ListDetailTemplate'
+import { ListDetailTemplateConfig } from '../types'
+import { ${this.toCamelCase(options.tableName)}Api, ${entityName} } from '@/lib/api/${this.toCamelCase(options.tableName)}'
 
-export const ${configName}: ListDetailConfig = {
-  // TODO: Configure columns, filters, fields, panel
-  // This is a template - customize based on your needs
+// Create API client adapter
+const ${this.toCamelCase(options.tableName)}ApiClient = {
+  getPaginated: async (params: {
+    page?: number
+    limit?: number
+    search?: string
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
+    filters?: Record<string, any>
+  }) => {
+    const result = await ${this.toCamelCase(options.tableName)}Api.getPaginated({
+      page: params.page || 1,
+      limit: params.limit || 25,
+      search: params.search,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+      ...params.filters,
+    })
+    return {
+      data: result.data,
+      pagination: result.pagination,
+    }
+  },
+  getById: async (id: string) => {
+    return await ${this.toCamelCase(options.tableName)}Api.getById(id)
+  },
+  create: async (data: Partial<${entityName}>) => {
+    return await ${this.toCamelCase(options.tableName)}Api.create(data as any)
+  },
+  update: async (id: string, data: Partial<${entityName}>) => {
+    return await ${this.toCamelCase(options.tableName)}Api.update(id, data as any)
+  },
+  delete: async (id: string) => {
+    await ${this.toCamelCase(options.tableName)}Api.delete(id)
+  },
+  getFilterValues: async (field: string, limit?: number) => {
+    return await ${this.toCamelCase(options.tableName)}Api.getFilterValues(field as any, limit)
+  },
+  bulkImport: async (items: Partial<${entityName}>[]) => {
+    await ${this.toCamelCase(options.tableName)}Api.bulkImport(items as any[])
+  },
+}
+
+export const ${configName}: ListDetailTemplateConfig<${entityName}> = {
+  entityName: '${entityName}',
+  entityNamePlural: '${entityNamePlural}',
+  description: '${this.generateDescription(options.tableName, schema)}',
+  defaultSort: {
+    field: 'id',
+    order: 'asc',
+  },
+  defaultPageSize: 25,
+  pageSizeOptions: [10, 25, 50, 100],
+  showImportExport: true,
+
+  columns: [
+    // TODO: Configure columns based on schema
+    // Example:
+    // {
+    //   key: 'name',
+    //   label: 'Name',
+    //   sortable: true,
+    //   align: 'left',
+    // },
+  ],
+
+  fields: [
+    // TODO: Configure fields for detail panel
+    // Example:
+    // {
+    //   key: 'name',
+    //   label: 'Name',
+    //   type: 'text',
+    //   required: true,
+    //   editable: true,
+    //   section: 'main',
+    // },
+  ],
+
+  panel: {
+    titleKey: 'id',
+    sections: [
+      {
+        id: 'main',
+        title: 'Main information',
+        fields: [],
+        collapsible: false,
+      },
+    ],
+    actions: {
+      delete: {
+        label: 'Delete',
+        confirmMessage: 'Are you sure you want to delete this ${entityName} record?',
+      },
+    },
+  },
+
+  apiClient: ${this.toCamelCase(options.tableName)}ApiClient,
 }
 `
+  }
+
+  /**
+   * Generate a default description for the table based on its name and schema
+   */
+  private generateDescription(tableName: string, schema: any): string {
+    // Convert table name to readable format
+    const readableName = tableName
+      .split(/[-_]/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+    
+    // Try to infer description from table name
+    const fieldCount = schema?.fields?.length || 0
+    
+    if (fieldCount > 0) {
+      return `This table contains ${readableName.toLowerCase()} records with ${fieldCount} fields. Manage and view ${readableName.toLowerCase()} data here.`
+    }
+    
+    return `This table contains ${readableName.toLowerCase()} records. Manage and view ${readableName.toLowerCase()} data here.`
   }
 
   /**

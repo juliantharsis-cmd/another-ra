@@ -56,6 +56,7 @@ const thermalCriteriaApiClient = {
 export const thermalCriteriaConfig: ListDetailTemplateConfig<ThermalCriteria> = {
   entityName: 'Thermal Criteria',
   entityNamePlural: 'Thermal Criteria',
+  description: 'Manage thermal criteria and thresholds used for energy efficiency assessments and building performance evaluations.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

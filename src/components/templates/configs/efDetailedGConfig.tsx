@@ -50,6 +50,7 @@ const efDetailedGApiClient = {
 export const efDetailedGConfig: ListDetailTemplateConfig<EFDetailedG> = {
   entityName: 'EF/Detailed G',
   entityNamePlural: 'EF/Detailed G',
+  description: 'Manage detailed emission factors and GWP (Global Warming Potential) values. Track specific emission factors with their associated greenhouse gas types and conversion factors.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

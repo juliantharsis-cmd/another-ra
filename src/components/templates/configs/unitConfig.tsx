@@ -50,6 +50,7 @@ const unitApiClient = {
 export const unitConfig: ListDetailTemplateConfig<Unit> = {
   entityName: 'Unit',
   entityNamePlural: 'Units',
+  description: 'Manage measurement units used throughout the system. Define unit names, symbols, and conversion factors for various measurement types.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

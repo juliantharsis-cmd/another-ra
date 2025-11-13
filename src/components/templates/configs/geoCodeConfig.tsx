@@ -56,6 +56,7 @@ const geoCodeApiClient = {
 export const geoCodeConfig: ListDetailTemplateConfig<GeoCode> = {
   entityName: 'geo Code',
   entityNamePlural: 'geo Code',
+  description: 'Manage geographic codes and location identifiers for regional data classification and geographic referencing.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

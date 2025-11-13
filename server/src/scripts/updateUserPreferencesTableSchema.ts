@@ -157,6 +157,17 @@ const USER_PREFERENCES_FIELDS = [
       ],
     },
   },
+  {
+    name: 'Sidebar Layout',
+    type: 'singleSelect',
+    description: 'Layout for sidebar buttons (sidebarFooter or topBanner)',
+    options: {
+      choices: [
+        { name: 'sidebarFooter', color: 'blueLight2' },
+        { name: 'topBanner', color: 'greenLight2' },
+      ],
+    },
+  },
 ]
 
 async function updateUserPreferencesTableSchema() {

@@ -26,6 +26,7 @@ import { useTableDataCache } from '@/hooks/useTableDataCache'
 import { enhanceWithCachedRelationships } from '@/lib/utils/enhanceWithCachedRelationships'
 import { fetchFieldMapping, getFieldMapping } from '@/lib/fieldIdMapping'
 import FilterPopover from './FilterPopover'
+import TableDescription from './TableDescription'
 
 interface ListDetailTemplateProps<T = any> {
   config: ListDetailTemplateConfig<T>
@@ -39,7 +40,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
   const safeConfig = config || {}
   
   // Get user preferences for default page size (call hook first)
-  const { defaultPageSize: userDefaultPageSize, loading: prefsLoading } = useUserPreferences()
+  const { defaultPageSize: userDefaultPageSize, loading: prefsLoading, preferences } = useUserPreferences()
   
   // Use safe defaults if config is invalid (don't return early - causes hooks error)
   if (!config || !config.apiClient) {
@@ -50,6 +51,7 @@ export default function ListDetailTemplate<T extends { id: string }>({
   const {
     entityName = 'Item',
     entityNamePlural = 'Items',
+    description,
     columns = [],
     fields = [],
     filters = [],
@@ -78,6 +80,10 @@ export default function ListDetailTemplate<T extends { id: string }>({
   useEffect(() => {
     setIsMounted(true)
   }, [])
+  
+  // Only apply top banner padding after mount and preferences have loaded to avoid hydration mismatch
+  const sidebarLayout = preferences?.sidebarLayout || (isMounted && !prefsLoading ? 'topBanner' : undefined)
+  const showTopBanner = isMounted && !prefsLoading && sidebarLayout === 'topBanner'
   
   // Feature flags - memoize to avoid repeated localStorage access during renders
   // Use useMemo to ensure feature flags are only computed once per render cycle
@@ -2016,23 +2022,24 @@ export default function ListDetailTemplate<T extends { id: string }>({
 
   return (
     <>
-      <div className="flex flex-col h-full relative">
+      <div className={`flex flex-col h-full relative ${showTopBanner ? 'pt-20' : ''}`}>
       {/* Breadcrumb with Import/Export and Size Column */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-sm text-neutral-600">
-            <span className="hover:text-green-600 cursor-pointer transition-colors">Organization structure</span>
-            <span className="text-neutral-400">/</span>
-            <span className="font-medium text-neutral-900">{entityNamePlural}</span>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-sm text-neutral-600">
+              <span className="hover:text-green-600 cursor-pointer transition-colors">Organization structure</span>
+              <span className="text-neutral-400">/</span>
+              <span className="font-medium text-neutral-900">{entityNamePlural}</span>
+            </div>
+            <div className="flex items-center space-x-2 text-xs text-neutral-500">
+              <span>
+                Showing {Math.min((currentPage - 1) * pageSize + 1, totalCount)} - {Math.min(currentPage * pageSize, totalCount)} of {totalCount}
+              </span>
+              <span className="text-neutral-300">•</span>
+              <span>{totalCount} total</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-2 text-xs text-neutral-500">
-            <span>
-              Showing {Math.min((currentPage - 1) * pageSize + 1, totalCount)} - {Math.min(currentPage * pageSize, totalCount)} of {totalCount}
-            </span>
-            <span className="text-neutral-300">•</span>
-            <span>{totalCount} total</span>
-          </div>
-        </div>
         <div className="flex items-center space-x-3">
           {headerActions}
           {isTableActionsV2Enabled ? (
@@ -2185,6 +2192,13 @@ export default function ListDetailTemplate<T extends { id: string }>({
             <span>Add {entityName.toLowerCase()}</span>
           </button>
         </div>
+        </div>
+        {/* Table Description */}
+        {description && (
+          <div className="px-6 -mt-4 mb-4">
+            <TableDescription description={description} />
+          </div>
+        )}
       </div>
 
       {/* Filter Bar */}

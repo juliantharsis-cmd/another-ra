@@ -13,6 +13,7 @@ export interface UserPreferences {
   defaultPageSize: number
   defaultSortField?: string
   defaultSortOrder: 'asc' | 'desc'
+  sidebarLayout?: 'sidebarFooter' | 'topBanner'
   createdAt?: string
   updatedAt?: string
 }
@@ -29,6 +30,7 @@ export interface UpdateUserPreferencesDto {
   defaultPageSize?: number
   defaultSortField?: string
   defaultSortOrder?: 'asc' | 'desc'
+  sidebarLayout?: 'sidebarFooter' | 'topBanner'
 }
 
 export interface ApiResponse<T> {

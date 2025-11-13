@@ -118,6 +118,7 @@ const integrationMarketplaceApiClient = {
 export const integrationMarketplaceConfig: ListDetailTemplateConfig<IntegrationMarketplaceProvider> = {
   entityName: 'Integration Provider',
   entityNamePlural: 'Integrations',
+  description: 'Manage integration providers and external service connections. Configure API connections, authentication, and settings for third-party services and AI providers.',
   defaultSort: {
     field: 'sortOrder',
     order: 'asc',

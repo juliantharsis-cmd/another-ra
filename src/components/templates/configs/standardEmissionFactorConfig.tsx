@@ -57,6 +57,7 @@ const standardEmissionFactorApiClient = {
 
 export const standardEmissionFactorConfig: ListDetailTemplateConfig<StandardEmissionFactor> = {
   entityName: 'Standard Emission Factor',
+  description: 'Manage standard emission factors used for calculating greenhouse gas emissions. These factors represent the standard values for converting activity data into CO2 equivalent emissions.',
   entityNamePlural: 'Standard Emission Factors',
   defaultSort: {
     field: 'Name',

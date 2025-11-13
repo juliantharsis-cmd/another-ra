@@ -50,6 +50,7 @@ const standardECMClassificationApiClient = {
 export const standardECMClassificationConfig: ListDetailTemplateConfig<StandardECMClassification> = {
   entityName: 'Standard ECM Classification',
   entityNamePlural: 'Standard ECM Classifications',
+  description: 'Manage classification schemes for Energy Conservation Measures (ECMs). Organize ECMs into categories and hierarchies for better management and reporting.',
   defaultSort: {
     field: 'Name',
     order: 'asc',

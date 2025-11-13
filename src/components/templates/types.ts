@@ -158,6 +158,8 @@ export interface ListDetailTemplateConfig<T = any> {
   entityName: string
   /** Entity name (plural, e.g., 'Companies', 'Users') */
   entityNamePlural: string
+  /** Table description - shown below the title with expand/collapse functionality */
+  description?: string
   /** Table columns configuration */
   columns: ColumnConfig[]
   /** Detail panel fields configuration */
