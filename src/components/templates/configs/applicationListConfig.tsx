@@ -106,6 +106,26 @@ export const applicationListConfig: ListDetailTemplateConfig<ApplicationList> = 
         </span>
       ),
     },
+    {
+      key: 'Alt URL',
+      label: 'Alt URL',
+      sortable: false,
+      filterable: false,
+      align: 'left',
+      render: (value: string) => {
+        if (!value) return <span className="text-sm text-neutral-400">—</span>
+        return (
+          <a 
+            href={value} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            {value}
+          </a>
+        )
+      },
+    },
   ],
 
   filters: [
@@ -164,6 +184,15 @@ export const applicationListConfig: ListDetailTemplateConfig<ApplicationList> = 
       placeholder: 'Enter order number...',
       section: 'main',
     },
+    {
+      key: 'Alt URL',
+      label: 'Alt URL',
+      type: 'text',
+      editable: true,
+      required: false,
+      placeholder: 'e.g., /spaces/system-config/companies or https://example.com',
+      section: 'main',
+    },
   ],
 
   panel: {
@@ -172,7 +201,7 @@ export const applicationListConfig: ListDetailTemplateConfig<ApplicationList> = 
       {
         id: 'main',
         title: 'Main information',
-        fields: ['Name', 'Description', 'Attachment', 'Status', 'Order'],
+        fields: ['Name', 'Description', 'Alt URL', 'Attachment', 'Status', 'Order'],
         collapsible: false,
       },
     ],

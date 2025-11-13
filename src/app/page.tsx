@@ -17,9 +17,21 @@ interface SpaceCard {
   order?: number
 }
 
-// Map application names to routes
-const getSpacePath = (name: string): string => {
-  const nameLower = name.toLowerCase()
+// Map application to route - uses Alt URL if available, otherwise falls back to name matching
+const getSpacePath = (app: ApplicationList): string => {
+  // Priority 1: Use Alt URL if provided
+  if (app['Alt URL'] && app['Alt URL'].trim() !== '') {
+    const altUrl = app['Alt URL'].trim()
+    // Ensure it starts with / if it's a relative path
+    if (altUrl.startsWith('/')) {
+      return altUrl
+    }
+    // If it's a full URL, return as-is (will be handled by link component)
+    return altUrl
+  }
+  
+  // Priority 2: Fallback to name-based matching
+  const nameLower = (app.Name || '').toLowerCase()
   if (nameLower.includes('system') && nameLower.includes('config')) {
     return '/spaces/system-config/companies'
   }
@@ -182,7 +194,7 @@ export default function Home() {
           name: appName,
           description: app.Description || '',
           imageUrl,
-          path: getSpacePath(appName),
+          path: getSpacePath(app),
           status: app.Status || 'Active',
           order: app.Order || 999,
         })
@@ -307,6 +319,13 @@ export default function Home() {
   }
 
   const handleCardClick = (path: string) => {
+    // Handle external URLs (full URLs)
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      window.open(path, '_blank', 'noopener,noreferrer')
+      return
+    }
+    
+    // Handle internal routes (relative paths)
     // Set transition flag for target page BEFORE navigation
     // This ensures the Sidebar can detect it when the new page loads
     localStorage.setItem('space_transition', 'true')

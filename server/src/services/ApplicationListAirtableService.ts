@@ -126,9 +126,10 @@ export class ApplicationListAirtableService {
     }
     
     // Map Airtable field names to our ApplicationList interface
-    // Only synchronize: Name, Description, Attachment, Status, Order
+    // Synchronize: Name, Description, Alt URL, Attachment, Status, Order
     const Name = getField(['Name', 'name'], '')
     const Description = getField(['Description', 'description'], '')
+    const AltURL = getField(['Alt URL', 'altUrl', 'alt_url'], '')
     const Attachment = getField(['Attachment', 'attachment', 'Attachments', 'attachments'], [])
     const Status = getField(['Status', 'status'], 'Active')
     const Order = getField(['Order', 'order', 'Sequence', 'sequence'], 0)
@@ -137,6 +138,7 @@ export class ApplicationListAirtableService {
       id: record.id,
       Name,
       Description,
+      'Alt URL': AltURL,
       Attachment: Array.isArray(Attachment) ? Attachment : (Attachment ? [Attachment] : []),
       Status,
       Order: typeof Order === 'number' ? Order : (parseInt(String(Order)) || 0),
@@ -149,17 +151,20 @@ export class ApplicationListAirtableService {
 
   /**
    * Map ApplicationList DTO to Airtable fields
-   * Only synchronize: Name, Description, Attachment, Status, Order
+   * Synchronize: Name, Description, Alt URL, Attachment, Status, Order
    */
   mapApplicationListToAirtable(dto: any): Record<string, any> {
     const fields: Record<string, any> = {}
     
-    // Map to actual Airtable field names - only these 5 fields
+    // Map to actual Airtable field names
     if (dto.Name !== undefined && dto.Name !== null && String(dto.Name).trim() !== '') {
       fields['Name'] = String(dto.Name).trim()
     }
     if (dto.Description !== undefined && dto.Description !== null && String(dto.Description).trim() !== '') {
       fields['Description'] = String(dto.Description).trim()
+    }
+    if (dto['Alt URL'] !== undefined && dto['Alt URL'] !== null && String(dto['Alt URL']).trim() !== '') {
+      fields['Alt URL'] = String(dto['Alt URL']).trim()
     }
     if (dto.Attachment !== undefined && dto.Attachment !== null) {
       // Airtable attachment field expects array of attachment objects
@@ -186,6 +191,9 @@ export class ApplicationListAirtableService {
       'name': 'Name',
       'Description': 'Description',
       'description': 'Description',
+      'Alt URL': 'Alt URL',
+      'altUrl': 'Alt URL',
+      'alt_url': 'Alt URL',
       'Attachment': 'Attachment',
       'attachment': 'Attachment',
       'Status': 'Status',

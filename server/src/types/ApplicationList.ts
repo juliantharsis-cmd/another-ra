@@ -2,13 +2,14 @@
  * Application List Type Definitions
  * 
  * Defines the structure of Application List records from Airtable
- * Only synchronizes: Name, Description, Attachment, Status, Order
+ * Synchronizes: Name, Description, Alt URL, Attachment, Status, Order
  */
 
 export interface ApplicationList {
   id: string
   Name?: string
   Description?: string
+  'Alt URL'?: string // Alternative URL field
   Attachment?: any[] // Airtable attachment field
   Status?: 'Active' | 'Inactive'
   Order?: number // Order/sequence field
@@ -21,6 +22,7 @@ export interface ApplicationList {
 export interface CreateApplicationListDto {
   Name?: string
   Description?: string
+  'Alt URL'?: string
   Attachment?: any[]
   Status?: 'Active' | 'Inactive'
   Order?: number
@@ -29,6 +31,7 @@ export interface CreateApplicationListDto {
 export interface UpdateApplicationListDto {
   Name?: string
   Description?: string
+  'Alt URL'?: string
   Attachment?: any[]
   Status?: 'Active' | 'Inactive'
   Order?: number

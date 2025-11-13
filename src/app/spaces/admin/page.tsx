@@ -1,49 +1,75 @@
+'use client'
+
+import Sidebar from '@/components/Sidebar'
+import { useSidebar } from '@/components/SidebarContext'
 import Link from 'next/link'
+import { BuildingIcon, GlobeIcon, LeafIcon, DocumentIcon, SettingsIcon } from '@/components/icons'
 
-export default function AdminPage() {
+function AdminContent() {
+  const { isCollapsed } = useSidebar()
+  
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Admin Space
-        </h1>
-        <p className="text-gray-600">
-          Administrative functions and user management
-        </p>
-      </div>
+    <div className="fixed inset-0 flex bg-gray-50 overflow-hidden" style={{ margin: 0, padding: 0 }}>
+      <Sidebar />
+      
+      <div className={`flex-1 p-8 overflow-y-auto ${isCollapsed ? 'ml-16' : 'ml-64'}`}
+           style={{ transition: 'margin-left 300ms ease-in-out' }}>
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-neutral-900 mb-2">Administration</h1>
+            <p className="text-neutral-600">
+              Manage administrative settings, configurations, and system administration
+            </p>
+          </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <Link
-            href="/spaces/admin/user-preferences"
-            className="border border-gray-200 rounded-lg p-4 hover:border-green-500 hover:shadow-md transition-all cursor-pointer"
-          >
-            <h2 className="text-xl font-semibold mb-4">User Preferences</h2>
-            <p className="text-gray-600">Customize your application settings and preferences</p>
-          </Link>
-          
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-4">User Management</h2>
-            <p className="text-gray-600">Manage users, roles, and permissions</p>
+          {/* Quick Access Cards */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <Link
+              href="/spaces/admin/application-list"
+              className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 hover:border-green-500 hover:shadow-md transition-all"
+            >
+              <SettingsIcon className="w-8 h-8 text-green-600 mb-3" />
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">Application List</h3>
+              <p className="text-sm text-neutral-600">Manage application configurations and settings</p>
+            </Link>
+
+            <Link
+              href="/spaces/admin/user-preferences"
+              className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 hover:border-green-500 hover:shadow-md transition-all"
+            >
+              <SettingsIcon className="w-8 h-8 text-green-600 mb-3" />
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">User Preferences</h3>
+              <p className="text-sm text-neutral-600">Manage user preferences and settings</p>
+            </Link>
+
+            {/* Placeholder cards for future admin features */}
+            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 opacity-60">
+              <SettingsIcon className="w-8 h-8 text-neutral-400 mb-3" />
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">System Settings</h3>
+              <p className="text-sm text-neutral-600">Configure system parameters and settings</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 opacity-60">
+              <DocumentIcon className="w-8 h-8 text-neutral-400 mb-3" />
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">Audit Trail</h3>
+              <p className="text-sm text-neutral-600">Track changes and access history</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 opacity-60">
+              <SettingsIcon className="w-8 h-8 text-neutral-400 mb-3" />
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">Backup & Restore</h3>
+              <p className="text-sm text-neutral-600">Data backup and recovery options</p>
+            </div>
           </div>
-          
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-4">System Logs</h2>
-            <p className="text-gray-600">View and monitor system activity</p>
-          </div>
-          
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-4">Audit Trail</h2>
-            <p className="text-gray-600">Track changes and access history</p>
-          </div>
-          
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h2 className="text-xl font-semibold mb-4">Backup & Restore</h2>
-            <p className="text-gray-600">Data backup and recovery options</p>
-          </div>
+
         </div>
       </div>
     </div>
   )
 }
 
+export default function AdminPage() {
+  // SidebarProvider is now at the spaces/layout.tsx level
+  return <AdminContent />
+}
