@@ -1,20 +1,16 @@
 import { Request, Response } from 'express'
-import { ActivityDensityAirtableService, CreateActivityDensityDto, UpdateActivityDensityDto } from '../services/ActivityDensityAirtableService'
+import { GeoCodeAirtableService } from '../services/GeoCodeAirtableService'
 
-export class ActivityDensityController {
-  private service: ActivityDensityAirtableService | null = null
+export class GeoCodeController {
+  private service: GeoCodeAirtableService | null = null
 
-  private getService(): ActivityDensityAirtableService {
+  private getService(): GeoCodeAirtableService {
     if (!this.service) {
-      this.service = new ActivityDensityAirtableService()
+      this.service = new GeoCodeAirtableService()
     }
     return this.service
   }
 
-  /**
-   * GET /api/activity-density
-   * Get all Activity Density records with pagination, filtering, and sorting
-   */
   async getAll(req: Request, res: Response): Promise<void> {
     try {
       const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined
@@ -48,18 +44,14 @@ export class ActivityDensityController {
         pagination,
       })
     } catch (error: any) {
-      console.error('Error in ActivityDensityController.getAll:', error)
+      console.error('Error in GeoCodeController.getAll:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to fetch Activity Density records',
+        error: error.message || 'Failed to fetch geo Code',
       })
     }
   }
 
-  /**
-   * GET /api/activity-density/:id
-   * Get a single Activity Density record by ID
-   */
   async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
@@ -68,7 +60,7 @@ export class ActivityDensityController {
       if (!record) {
         res.status(404).json({
           success: false,
-          error: 'Activity Density record not found',
+          error: 'GeoCode record not found',
         })
         return
       }
@@ -78,21 +70,17 @@ export class ActivityDensityController {
         data: record,
       })
     } catch (error: any) {
-      console.error('Error in ActivityDensityController.getById:', error)
+      console.error('Error in GeoCodeController.getById:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to fetch Activity Density record',
+        error: error.message || 'Failed to fetch GeoCode',
       })
     }
   }
 
-  /**
-   * POST /api/activity-density
-   * Create a new Activity Density record
-   */
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const dto: CreateActivityDensityDto = req.body
+      const dto = req.body
       const record = await this.getService().create(dto)
 
       res.status(201).json({
@@ -100,22 +88,18 @@ export class ActivityDensityController {
         data: record,
       })
     } catch (error: any) {
-      console.error('Error in ActivityDensityController.create:', error)
+      console.error('Error in GeoCodeController.create:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to create Activity Density record',
+        error: error.message || 'Failed to create GeoCode',
       })
     }
   }
 
-  /**
-   * PUT /api/activity-density/:id
-   * Update an Activity Density record
-   */
   async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
-      const dto: UpdateActivityDensityDto = req.body
+      const dto = req.body
       const record = await this.getService().update(id, dto)
 
       res.json({
@@ -123,25 +107,14 @@ export class ActivityDensityController {
         data: record,
       })
     } catch (error: any) {
-      if (error.message?.includes('not found')) {
-        res.status(404).json({
-          success: false,
-          error: error.message,
-        })
-        return
-      }
-      console.error('Error in ActivityDensityController.update:', error)
+      console.error('Error in GeoCodeController.update:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to update Activity Density record',
+        error: error.message || 'Failed to update GeoCode',
       })
     }
   }
 
-  /**
-   * DELETE /api/activity-density/:id
-   * Delete an Activity Density record
-   */
   async delete(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
@@ -149,22 +122,14 @@ export class ActivityDensityController {
 
       res.json({
         success: true,
-        message: 'Activity Density record deleted successfully',
+        message: 'GeoCode record deleted successfully',
       })
     } catch (error: any) {
-      if (error.message?.includes('not found')) {
-        res.status(404).json({
-          success: false,
-          error: error.message,
-        })
-        return
-      }
-      console.error('Error in ActivityDensityController.delete:', error)
+      console.error('Error in GeoCodeController.delete:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to delete Activity Density record',
+        error: error.message || 'Failed to delete GeoCode',
       })
     }
   }
 }
-

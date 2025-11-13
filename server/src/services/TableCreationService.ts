@@ -34,9 +34,10 @@ export class TableCreationService {
   }
 
   /**
-   * Create a table from Airtable
+   * Phase 1: Generate all files and register route
+   * Sets status to 'awaiting-confirmation' after completion
    */
-  async createTable(jobId: string, options: TableCreationOptions): Promise<void> {
+  async generateFiles(jobId: string, options: TableCreationOptions): Promise<void> {
     try {
       console.log(`📋 [TableCreation] Starting table creation for: ${options.tableName}`)
       console.log(`   Base ID: ${options.baseId}`)
@@ -134,12 +135,13 @@ export class TableCreationService {
       const tablePath = this.generateTablePath(options)
       const allFilesCreated = filesCreated.service && filesCreated.api && filesCreated.route && filesCreated.config
       
+      // Phase 1 complete - set status to awaiting-confirmation
       this.jobService.updateJob(jobId, {
         progress: 100,
-        status: 'completed',
+        status: 'awaiting-confirmation',
         currentStep: allFilesCreated 
-          ? 'Table created successfully! All files verified. Server restart required to use the new table.'
-          : 'Table creation completed with warnings. Some files may be missing. Please check server logs.',
+          ? 'Phase 1 complete! Files generated and route registered. Please confirm to complete.'
+          : 'Phase 1 completed with warnings. Some files may be missing. Please check server logs.',
         result: {
           tableName: options.tableName,
           tablePath,
@@ -532,6 +534,122 @@ export const ${configName}: ListDetailConfig = {
   // This is a template - customize based on your needs
 }
 `
+  }
+
+  /**
+   * Phase 2: Finalize table creation (optional sidebar entry)
+   * Sets status to 'completed' after finalization
+   */
+  async finalizeTable(jobId: string, addSidebarEntry: boolean = false): Promise<void> {
+    const job = await this.jobService.getJob(jobId)
+    if (!job) {
+      throw new Error(`Job ${jobId} not found`)
+    }
+
+    if (job.status !== 'awaiting-confirmation') {
+      throw new Error(`Job ${jobId} is not in awaiting-confirmation status. Current status: ${job.status}`)
+    }
+
+    if (!job.result) {
+      throw new Error(`Job ${jobId} has no result data`)
+    }
+
+    try {
+      // Sidebar entry addition is disabled by default due to fragility
+      // Manual addition is recommended
+      if (addSidebarEntry) {
+        console.log(`⚠️  [TableCreation] Sidebar entry addition is disabled. Please add manually to avoid syntax errors.`)
+        // TODO: Re-enable when sidebar generation is more robust
+        // await this.addSidebarEntry(job.result.tableName, options.targetSection)
+      }
+
+      // Mark as completed
+      this.jobService.updateJob(jobId, {
+        status: 'completed',
+        currentStep: 'Table creation completed successfully!',
+      })
+
+      console.log(`✅ [TableCreation] Table creation finalized for: ${job.result.tableName}`)
+    } catch (error: any) {
+      console.error(`❌ [TableCreation] Error finalizing table:`, error)
+      this.jobService.updateJob(jobId, {
+        status: 'failed',
+        error: error.message || 'Failed to finalize table creation',
+      })
+      throw error
+    }
+  }
+
+  /**
+   * Cancel table creation and remove generated files
+   */
+  async cancelTableCreation(jobId: string): Promise<void> {
+    const job = await this.jobService.getJob(jobId)
+    if (!job) {
+      throw new Error(`Job ${jobId} not found`)
+    }
+
+    if (job.status !== 'awaiting-confirmation') {
+      throw new Error(`Job ${jobId} cannot be cancelled. Current status: ${job.status}`)
+    }
+
+    if (!job.result) {
+      throw new Error(`Job ${jobId} has no result data`)
+    }
+
+    try {
+      const tableName = job.result.tableName
+      console.log(`🗑️  [TableCreation] Cancelling table creation for: ${tableName}`)
+
+      // Remove generated files
+      const serviceFileName = `${this.toPascalCase(tableName)}AirtableService.ts`
+      const apiFileName = `${this.toCamelCase(tableName)}.ts`
+      const routeFileName = `${this.toCamelCase(tableName)}Routes.ts`
+      const configFileName = `${this.toCamelCase(tableName)}Config.tsx`
+
+      const projectRoot = path.resolve(__dirname, '../..')
+      const servicePath = path.join(__dirname, serviceFileName)
+      const apiPath = path.join(projectRoot, 'src', 'lib', 'api', apiFileName)
+      const routePath = path.resolve(__dirname, '..', 'routes', routeFileName)
+      const configPath = path.join(projectRoot, 'src', 'components', 'templates', 'configs', configFileName)
+
+      // Delete files if they exist
+      const filesToDelete = [
+        { path: servicePath, name: 'Backend service' },
+        { path: apiPath, name: 'Frontend API' },
+        { path: routePath, name: 'Route handler' },
+        { path: configPath, name: 'Template config' },
+      ]
+
+      for (const file of filesToDelete) {
+        if (fs.existsSync(file.path)) {
+          try {
+            fs.unlinkSync(file.path)
+            console.log(`   ✅ Deleted ${file.name}: ${file.path}`)
+          } catch (err: any) {
+            console.error(`   ❌ Failed to delete ${file.name}: ${err.message}`)
+          }
+        }
+      }
+
+      // TODO: Remove route registration from index.ts
+      // This is more complex and requires regex manipulation
+
+      // Mark as cancelled
+      this.jobService.updateJob(jobId, {
+        status: 'cancelled',
+        currentStep: 'Table creation cancelled. Generated files have been removed.',
+      })
+
+      console.log(`✅ [TableCreation] Table creation cancelled for: ${tableName}`)
+    } catch (error: any) {
+      console.error(`❌ [TableCreation] Error cancelling table creation:`, error)
+      this.jobService.updateJob(jobId, {
+        status: 'failed',
+        error: error.message || 'Failed to cancel table creation',
+      })
+      throw error
+    }
   }
 }
 

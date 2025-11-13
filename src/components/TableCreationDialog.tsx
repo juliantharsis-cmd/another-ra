@@ -11,7 +11,7 @@ interface TableCreationDialogProps {
   targetSection?: string | null
 }
 
-type Step = 'source' | 'base' | 'table' | 'confirm' | 'progress'
+type Step = 'source' | 'base' | 'table' | 'confirm' | 'progress' | 'confirmation' | 'success'
 
 export default function TableCreationDialog({ isOpen, onClose, targetSection }: TableCreationDialogProps) {
   const [currentStep, setCurrentStep] = useState<Step>('source')
@@ -25,6 +25,7 @@ export default function TableCreationDialog({ isOpen, onClose, targetSection }: 
   const [mounted, setMounted] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
   const [jobProgress, setJobProgress] = useState<{ progress: number; currentStep?: string } | null>(null)
+  const [successResult, setSuccessResult] = useState<{ tableName: string; tablePath: string; filesCreated?: any } | null>(null)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function TableCreationDialog({ isOpen, onClose, targetSection }: 
       setError(null)
       setJobId(null)
       setJobProgress(null)
+      setSuccessResult(null)
       setLoading(false)
       // Clear polling when dialog closes
       if (pollingIntervalRef.current) {
@@ -173,7 +175,24 @@ export default function TableCreationDialog({ isOpen, onClose, targetSection }: 
         const job = await developerApi.getJobStatus(id)
         setJobProgress({ progress: job.progress, currentStep: job.currentStep })
 
-        if (job.status === 'completed') {
+        if (job.status === 'awaiting-confirmation') {
+          // Phase 1 complete - show confirmation screen
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current)
+            pollingIntervalRef.current = null
+          }
+          setLoading(false)
+          setCurrentStep('confirmation')
+          // Store job result for confirmation screen
+          if (job.result) {
+            setSuccessResult({
+              tableName: job.result.tableName,
+              tablePath: job.result.tablePath,
+              filesCreated: job.result.filesCreated,
+            })
+          }
+          return
+        } else if (job.status === 'completed') {
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
             pollingIntervalRef.current = null
@@ -182,13 +201,12 @@ export default function TableCreationDialog({ isOpen, onClose, targetSection }: 
           // Show success message with details
           const tableName = job.result?.tableName || selectedTable?.name || 'the table'
           const tablePath = job.result?.tablePath || 'N/A'
-          // Show success and close after a moment
-          setTimeout(() => {
-            alert(`✅ Table created successfully!\n\nTable: ${tableName}\nPath: ${tablePath}\n\nPlease restart your server to use the new table.`)
-            onClose()
-            // TODO: Show success notification
-            // TODO: Refresh navigation to show new table
-          }, 1000)
+          setSuccessResult({
+            tableName,
+            tablePath,
+            filesCreated: (job.result as any)?.filesCreated,
+          })
+          setCurrentStep('success')
         } else if (job.status === 'failed') {
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current)
@@ -495,13 +513,6 @@ export default function TableCreationDialog({ isOpen, onClose, targetSection }: 
                         ></div>
                       </div>
                     </div>
-                    {jobProgress.progress === 100 && (
-                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <p className="text-sm text-green-800">
-                          ✅ Table created successfully! Closing dialog...
-                        </p>
-                      </div>
-                    )}
                   </div>
                 )}
                 {!jobProgress && (
@@ -514,24 +525,251 @@ export default function TableCreationDialog({ isOpen, onClose, targetSection }: 
                 )}
               </div>
             )}
+
+            {/* Step 6: Confirmation (Phase 1 Complete) */}
+            {currentStep === 'confirmation' && successResult && jobId && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                    <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+                    Files Generated Successfully!
+                  </h3>
+                  <p className="text-sm text-neutral-600">
+                    All files have been created and route has been registered. Please review and confirm to complete (sidebar entry is optional).
+                  </p>
+                </div>
+
+                {successResult.filesCreated && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-neutral-900">Files Created:</h4>
+                    <div className="space-y-2">
+                      {Object.entries(successResult.filesCreated).map(([key, created]) => (
+                        <div key={key} className="flex items-center gap-2 text-sm">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center ${created ? 'bg-green-100' : 'bg-red-100'}`}>
+                            {created ? (
+                              <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className={created ? 'text-neutral-700' : 'text-red-700'}>
+                            {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 font-medium mb-2">
+                    Phase 2 will:
+                  </p>
+                  <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                    <li>Mark the table creation as complete</li>
+                    <li>Optionally add sidebar entry (manual addition recommended to avoid syntax errors)</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note:</strong> If you cancel now, all generated files will be removed. The route is already registered and the table is functional.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 7: Success */}
+            {currentStep === 'success' && successResult && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+                    Table Created Successfully!
+                  </h3>
+                  <p className="text-sm text-neutral-600">
+                    Your table has been created and all files have been generated.
+                  </p>
+                </div>
+
+                <div className="p-6 bg-green-50 border border-green-200 rounded-lg space-y-4">
+                  <div>
+                    <span className="text-sm font-semibold text-green-900">Table:</span>
+                    <span className="ml-2 text-sm text-green-800">{successResult.tableName}</span>
+                  </div>
+                  {successResult.tablePath !== 'N/A' && (
+                    <div>
+                      <span className="text-sm font-semibold text-green-900">Path:</span>
+                      <span className="ml-2 text-sm text-green-800 font-mono">{successResult.tablePath}</span>
+                    </div>
+                  )}
+                </div>
+
+                {successResult.filesCreated && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-neutral-900">Files Created:</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${successResult.filesCreated.service ? 'bg-green-100' : 'bg-red-100'}`}>
+                          {successResult.filesCreated.service ? (
+                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={successResult.filesCreated.service ? 'text-neutral-700' : 'text-red-700'}>
+                          Backend service
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${successResult.filesCreated.api ? 'bg-green-100' : 'bg-red-100'}`}>
+                          {successResult.filesCreated.api ? (
+                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={successResult.filesCreated.api ? 'text-neutral-700' : 'text-red-700'}>
+                          Frontend API
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${successResult.filesCreated.route ? 'bg-green-100' : 'bg-red-100'}`}>
+                          {successResult.filesCreated.route ? (
+                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={successResult.filesCreated.route ? 'text-neutral-700' : 'text-red-700'}>
+                          Route handler
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${successResult.filesCreated.config ? 'bg-green-100' : 'bg-red-100'}`}>
+                          {successResult.filesCreated.config ? (
+                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={successResult.filesCreated.config ? 'text-neutral-700' : 'text-red-700'}>
+                          Template config
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Next step:</strong> Please restart your server to use the new table.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-between p-6 border-t border-neutral-200">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors"
-            >
-              Cancel
-            </button>
-            {currentStep === 'confirm' && (
+            {currentStep === 'success' ? (
               <button
-                onClick={handleCreate}
-                disabled={loading}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={onClose}
+                className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
               >
-                Create Table
+                Done
               </button>
+            ) : currentStep === 'confirmation' ? (
+              <>
+                <button
+                  onClick={async () => {
+                    if (!jobId) return
+                    try {
+                      setLoading(true)
+                      await developerApi.cancelTableCreation(jobId)
+                      setCurrentStep('confirm')
+                      setJobId(null)
+                      setJobProgress(null)
+                      setSuccessResult(null)
+                      setLoading(false)
+                      setError('Table creation cancelled. Generated files have been removed.')
+                    } catch (err: any) {
+                      setError(err.message || 'Failed to cancel table creation')
+                      setLoading(false)
+                    }
+                  }}
+                  disabled={loading}
+                  className="px-6 py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel & Revert
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!jobId) return
+                    try {
+                      setLoading(true)
+                      setCurrentStep('progress')
+                      // Start polling again for phase 2
+                      startJobPolling(jobId)
+                      await developerApi.finalizeTable(jobId, false) // Don't add sidebar automatically
+                    } catch (err: any) {
+                      setError(err.message || 'Failed to finalize table creation')
+                      setLoading(false)
+                      setCurrentStep('confirmation')
+                    }
+                  }}
+                  disabled={loading}
+                  className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Complete
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-md hover:bg-neutral-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                {currentStep === 'confirm' && (
+                  <button
+                    onClick={handleCreate}
+                    disabled={loading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Create Table
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

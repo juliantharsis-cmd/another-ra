@@ -196,5 +196,50 @@ router.get('/tables/jobs/:jobId', async (req: Request, res: Response) => {
   }
 })
 
+/**
+ * POST /api/developer/tables/jobs/:jobId/finalize
+ * Finalize table creation (Phase 2)
+ */
+router.post('/tables/jobs/:jobId/finalize', async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params
+    const { addSidebarEntry } = req.body
+    
+    const service = getDeveloperService()
+    await service.finalizeTable(jobId, addSidebarEntry === true)
+    
+    // Get updated job status
+    const job = await service.getJobStatus(jobId)
+    res.json(job)
+  } catch (error: any) {
+    console.error('Error finalizing table creation:', error)
+    res.status(500).json({
+      error: error.message || 'Failed to finalize table creation',
+    })
+  }
+})
+
+/**
+ * POST /api/developer/tables/jobs/:jobId/cancel
+ * Cancel table creation and remove generated files
+ */
+router.post('/tables/jobs/:jobId/cancel', async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params
+    
+    const service = getDeveloperService()
+    await service.cancelTableCreation(jobId)
+    
+    // Get updated job status
+    const job = await service.getJobStatus(jobId)
+    res.json(job)
+  } catch (error: any) {
+    console.error('Error cancelling table creation:', error)
+    res.status(500).json({
+      error: error.message || 'Failed to cancel table creation',
+    })
+  }
+})
+
 export default router
 

@@ -1,20 +1,16 @@
 import { Request, Response } from 'express'
-import { KeywordsTagsAirtableService, CreateKeywordsTagsDto, UpdateKeywordsTagsDto } from '../services/KeywordsTagsAirtableService'
+import { ThermalCriteriaAirtableService } from '../services/ThermalCriteriaAirtableService'
 
-export class KeywordsTagsController {
-  private service: KeywordsTagsAirtableService | null = null
+export class ThermalCriteriaController {
+  private service: ThermalCriteriaAirtableService | null = null
 
-  private getService(): KeywordsTagsAirtableService {
+  private getService(): ThermalCriteriaAirtableService {
     if (!this.service) {
-      this.service = new KeywordsTagsAirtableService()
+      this.service = new ThermalCriteriaAirtableService()
     }
     return this.service
   }
 
-  /**
-   * GET /api/keywords-tags
-   * Get all Keywords/Tags records with pagination, filtering, and sorting
-   */
   async getAll(req: Request, res: Response): Promise<void> {
     try {
       const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined
@@ -48,18 +44,14 @@ export class KeywordsTagsController {
         pagination,
       })
     } catch (error: any) {
-      console.error('Error in KeywordsTagsController.getAll:', error)
+      console.error('Error in ThermalCriteriaController.getAll:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to fetch Keywords/Tags records',
+        error: error.message || 'Failed to fetch Thermal Criteria',
       })
     }
   }
 
-  /**
-   * GET /api/keywords-tags/:id
-   * Get a single Keywords/Tags record by ID
-   */
   async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
@@ -68,7 +60,7 @@ export class KeywordsTagsController {
       if (!record) {
         res.status(404).json({
           success: false,
-          error: 'Keywords/Tags record not found',
+          error: 'ThermalCriteria record not found',
         })
         return
       }
@@ -78,21 +70,17 @@ export class KeywordsTagsController {
         data: record,
       })
     } catch (error: any) {
-      console.error('Error in KeywordsTagsController.getById:', error)
+      console.error('Error in ThermalCriteriaController.getById:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to fetch Keywords/Tags record',
+        error: error.message || 'Failed to fetch ThermalCriteria',
       })
     }
   }
 
-  /**
-   * POST /api/keywords-tags
-   * Create a new Keywords/Tags record
-   */
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const dto: CreateKeywordsTagsDto = req.body
+      const dto = req.body
       const record = await this.getService().create(dto)
 
       res.status(201).json({
@@ -100,22 +88,18 @@ export class KeywordsTagsController {
         data: record,
       })
     } catch (error: any) {
-      console.error('Error in KeywordsTagsController.create:', error)
+      console.error('Error in ThermalCriteriaController.create:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to create Keywords/Tags record',
+        error: error.message || 'Failed to create ThermalCriteria',
       })
     }
   }
 
-  /**
-   * PUT /api/keywords-tags/:id
-   * Update a Keywords/Tags record
-   */
   async update(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
-      const dto: UpdateKeywordsTagsDto = req.body
+      const dto = req.body
       const record = await this.getService().update(id, dto)
 
       res.json({
@@ -123,25 +107,14 @@ export class KeywordsTagsController {
         data: record,
       })
     } catch (error: any) {
-      if (error.message?.includes('not found')) {
-        res.status(404).json({
-          success: false,
-          error: error.message,
-        })
-        return
-      }
-      console.error('Error in KeywordsTagsController.update:', error)
+      console.error('Error in ThermalCriteriaController.update:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to update Keywords/Tags record',
+        error: error.message || 'Failed to update ThermalCriteria',
       })
     }
   }
 
-  /**
-   * DELETE /api/keywords-tags/:id
-   * Delete a Keywords/Tags record
-   */
   async delete(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params
@@ -149,22 +122,14 @@ export class KeywordsTagsController {
 
       res.json({
         success: true,
-        message: 'Keywords/Tags record deleted successfully',
+        message: 'ThermalCriteria record deleted successfully',
       })
     } catch (error: any) {
-      if (error.message?.includes('not found')) {
-        res.status(404).json({
-          success: false,
-          error: error.message,
-        })
-        return
-      }
-      console.error('Error in KeywordsTagsController.delete:', error)
+      console.error('Error in ThermalCriteriaController.delete:', error)
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to delete Keywords/Tags record',
+        error: error.message || 'Failed to delete ThermalCriteria',
       })
     }
   }
 }
-

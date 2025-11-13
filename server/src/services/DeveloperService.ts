@@ -244,8 +244,8 @@ export class DeveloperService {
         }
       }
 
-      // Use TableCreationService to handle the actual creation
-      await this.tableCreationService.createTable(jobId, {
+      // Use TableCreationService to handle Phase 1 (file generation)
+      await this.tableCreationService.generateFiles(jobId, {
         baseId: request.baseId,
         tableId: request.tableId,
         tableName,
@@ -259,6 +259,20 @@ export class DeveloperService {
       })
       throw error
     }
+  }
+
+  /**
+   * Finalize table creation (Phase 2)
+   */
+  async finalizeTable(jobId: string, addSidebarEntry: boolean = false): Promise<void> {
+    await this.tableCreationService.finalizeTable(jobId, addSidebarEntry)
+  }
+
+  /**
+   * Cancel table creation and remove generated files
+   */
+  async cancelTableCreation(jobId: string): Promise<void> {
+    await this.tableCreationService.cancelTableCreation(jobId)
   }
 }
 

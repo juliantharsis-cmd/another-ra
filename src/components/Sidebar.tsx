@@ -76,8 +76,6 @@ const getNavItems = (featureFlags: Record<string, boolean>): NavItem[] => [
       ...(featureFlags.scopeCategorisation ? [{ name: 'Scope & Categorisation', Icon: DocumentIcon, path: '/spaces/emission-management/scope-categorisation' }] : []),
       ...(featureFlags.unit ? [{ name: 'Unit', Icon: DocumentIcon, path: '/spaces/emission-management/unit' }] : []),
       ...(featureFlags.unitConversion ? [{ name: 'Unit Conversion', Icon: DocumentIcon, path: '/spaces/emission-management/unit-conversion' }] : []),
-      { name: 'Activity Density', Icon: DocumentIcon, path: '/spaces/system-config/activity-density' },
-      { name: 'Keywords/Tags', Icon: DocumentIcon, path: '/spaces/system-config/keywords-tags' },
     ],
   },
   {
@@ -305,24 +303,24 @@ export default function Sidebar() {
     return (
       <div key={item.name}>
         <div
-          className={`flex items-center justify-between px-4 py-2.5 cursor-pointer transition-all duration-200 ${
+          className={`flex items-center justify-between py-2.5 cursor-pointer transition-all duration-200 ${
             active
               ? 'bg-green-50 text-green-700 border-r-2 border-green-500'
               : 'text-neutral-700 hover:bg-neutral-100'
           }`}
-          style={{ paddingLeft: `${1 + level * 1.5}rem` }}
+          style={{ paddingLeft: `${0.75 + level * 1.5}rem`, paddingRight: '1rem' }}
           onClick={() => hasChildren && toggleExpand(item.name)}
         >
-          <div className="flex items-center space-x-3 flex-1">
-            <Icon className={`w-5 h-5 ${active ? 'text-green-600' : 'text-neutral-500'}`} />
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <Icon className={`w-5 h-5 flex-shrink-0 ${active ? 'text-green-600' : 'text-neutral-500'}`} />
             {item.path ? (
-              <Link href={item.path} className="flex-1" onClick={(e) => !hasChildren && e.stopPropagation()}>
-                <span className={`text-sm font-medium ${active ? 'text-green-700' : 'text-neutral-700'}`}>
+              <Link href={item.path} className="flex-1 min-w-0" onClick={(e) => !hasChildren && e.stopPropagation()}>
+                <span className={`text-sm font-medium block truncate ${active ? 'text-green-700' : 'text-neutral-700'}`}>
                   {item.name}
                 </span>
               </Link>
             ) : (
-              <span className={`text-sm font-medium ${active ? 'text-green-700' : 'text-neutral-700'}`}>
+              <span className={`text-sm font-medium block truncate ${active ? 'text-green-700' : 'text-neutral-700'}`}>
                 {item.name}
               </span>
             )}

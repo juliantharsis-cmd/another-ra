@@ -8,7 +8,7 @@ import { randomUUID } from 'crypto'
 
 export interface TableCreationJob {
   id: string
-  status: 'pending' | 'in-progress' | 'completed' | 'failed'
+  status: 'pending' | 'in-progress' | 'awaiting-confirmation' | 'completed' | 'failed' | 'cancelled'
   progress: number
   currentStep?: string
   error?: string
