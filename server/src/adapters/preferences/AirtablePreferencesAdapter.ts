@@ -189,12 +189,12 @@ export class AirtablePreferencesAdapter implements IPreferencesAdapter {
           if (key.tableId) {
             conditions.push(`{Table Id} = '${key.tableId.replace(/'/g, "''")}'`)
           } else {
-            conditions.push(`OR({Table Id} = '', ISBLANK({Table Id}))`)
+            conditions.push(`OR({Table Id} = '', {Table Id} = BLANK())`)
           }
           if (key.scopeId) {
             conditions.push(`{Scope Id} = '${key.scopeId.replace(/'/g, "''")}'`)
           } else {
-            conditions.push(`OR({Scope Id} = '', ISBLANK({Scope Id}))`)
+            conditions.push(`OR({Scope Id} = '', {Scope Id} = BLANK())`)
           }
           records = await this.base(this.tableName)
             .select({

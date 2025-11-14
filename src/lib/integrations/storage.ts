@@ -239,32 +239,61 @@ export function updateLastUsed(id: string): void {
 
 /**
  * Clean up duplicate integrations - keeps only the most recent one per provider
- * Returns the number of duplicates removed
+ * Also removes invalid integrations (missing API key, invalid providerId)
+ * Returns the number of duplicates/invalid integrations removed
  */
 export function cleanupDuplicateIntegrations(): number {
   if (typeof window === 'undefined') return 0
 
   try {
     const allIntegrations = getAllIntegrations()
+    const validProviderIds = ['openai', 'anthropic', 'google', 'custom']
+    let removedCount = 0
+    
+    // First, remove invalid integrations
+    allIntegrations.forEach(integration => {
+      // Remove if missing API key
+      if (!integration.apiKey || integration.apiKey.trim() === '') {
+        deleteIntegration(integration.id)
+        removedCount++
+        return
+      }
+      
+      // Remove if invalid providerId (like Airtable record IDs)
+      if (!validProviderIds.includes(integration.providerId)) {
+        deleteIntegration(integration.id)
+        removedCount++
+        return
+      }
+    })
+    
+    // Now get remaining valid integrations
+    const validIntegrations = getAllIntegrations().filter(i => {
+      return i.apiKey && i.apiKey.trim() !== '' && validProviderIds.includes(i.providerId)
+    })
+    
     const providerMap = new Map<string, AIIntegration[]>()
     
     // Group integrations by providerId
-    allIntegrations.forEach(integration => {
+    validIntegrations.forEach(integration => {
       const existing = providerMap.get(integration.providerId) || []
       existing.push(integration)
       providerMap.set(integration.providerId, existing)
     })
     
-    let removedCount = 0
-    
     // For each provider, keep only the most recent integration
     providerMap.forEach((integrations, providerId) => {
       if (integrations.length > 1) {
-        // Sort by updatedAt (most recent first)
+        // Sort by updatedAt (most recent first), then by lastUsed
         integrations.sort((a, b) => {
           const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
           const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
-          return bDate - aDate
+          if (bDate !== aDate) return bDate - aDate
+          
+          // If updatedAt is same, use lastUsed
+          const aLastUsed = a.lastUsed ? new Date(a.lastUsed).getTime() : 0
+          const bLastUsed = b.lastUsed ? new Date(b.lastUsed).getTime() : 0
+          return bLastUsed - aLastUsed
         })
         
         // Keep the first (most recent), delete the rest
@@ -277,6 +306,13 @@ export function cleanupDuplicateIntegrations(): number {
         })
       }
     })
+    
+    // Dispatch event to notify other components
+    if (typeof window !== 'undefined' && removedCount > 0) {
+      window.dispatchEvent(new CustomEvent('integrations-cleaned', { 
+        detail: { removedCount } 
+      }))
+    }
     
     return removedCount
   } catch (error) {

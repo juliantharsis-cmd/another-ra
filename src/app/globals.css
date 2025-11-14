@@ -319,6 +319,21 @@ body {
   animation: slide-in-from-right 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+@keyframes slide-in-from-bottom {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-from-bottom {
+  animation: slide-in-from-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 /* Hide scrollbar for cards container */
 .scrollbar-hide {
   -ms-overflow-style: none;

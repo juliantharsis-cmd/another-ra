@@ -29,6 +29,9 @@ export interface UserPreferences {
   defaultSortOrder: 'asc' | 'desc'
   sidebarLayout?: 'sidebarFooter' | 'topBanner' // Layout for sidebar buttons
   
+  // AI Assistant Settings
+  aiNotificationAnimations?: boolean // Enable/disable AI notification pulse animations
+  
   // Metadata
   createdAt?: string
   updatedAt?: string
@@ -47,6 +50,7 @@ export interface CreateUserPreferencesDto {
   defaultSortField?: string
   defaultSortOrder?: 'asc' | 'desc'
   sidebarLayout?: 'sidebarFooter' | 'topBanner'
+  aiNotificationAnimations?: boolean // Enable/disable AI notification pulse animations
 }
 
 export interface UpdateUserPreferencesDto extends CreateUserPreferencesDto {}
@@ -81,6 +85,7 @@ export function getDefaultPreferences(
     defaultPageSize: 25,
     defaultSortOrder: 'asc',
     sidebarLayout: 'topBanner',
+    aiNotificationAnimations: true, // Default: enabled
   }
 }
 

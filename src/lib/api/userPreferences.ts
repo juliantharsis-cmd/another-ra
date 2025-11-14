@@ -14,6 +14,7 @@ export interface UserPreferences {
   defaultSortField?: string
   defaultSortOrder: 'asc' | 'desc'
   sidebarLayout?: 'sidebarFooter' | 'topBanner'
+  aiNotificationAnimations?: boolean // Enable/disable AI notification pulse animations
   createdAt?: string
   updatedAt?: string
 }
@@ -31,6 +32,7 @@ export interface UpdateUserPreferencesDto {
   defaultSortField?: string
   defaultSortOrder?: 'asc' | 'desc'
   sidebarLayout?: 'sidebarFooter' | 'topBanner'
+  aiNotificationAnimations?: boolean // Enable/disable AI notification pulse animations
 }
 
 export interface ApiResponse<T> {

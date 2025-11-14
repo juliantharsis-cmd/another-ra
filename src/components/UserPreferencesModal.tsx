@@ -127,6 +127,8 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
     try {
       setLoading(true)
       const data = await userPreferencesApi.getPreferences()
+      console.log('[UserPreferencesModal] Loaded preferences:', data)
+      console.log('[UserPreferencesModal] aiNotificationAnimations value:', data.aiNotificationAnimations)
       setPreferences(data)
       setOriginalPreferences(data)
       
@@ -161,6 +163,7 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
         defaultPageSize: 25,
         defaultSortOrder: 'asc',
         sidebarLayout: 'topBanner',
+        aiNotificationAnimations: true,
       }
       setPreferences(defaultPrefs)
       setOriginalPreferences(defaultPrefs)
@@ -210,12 +213,23 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
       // Only send changed fields
       Object.keys(preferences).forEach((key) => {
         const typedKey = key as keyof UserPreferences
-        if (preferences[typedKey] !== originalPreferences[typedKey]) {
-          updates[typedKey as keyof UpdateUserPreferencesDto] = preferences[typedKey] as any
+        const currentValue = preferences[typedKey]
+        const originalValue = originalPreferences[typedKey]
+        
+        // Special handling for boolean values - need to check both undefined and actual value
+        if (typedKey === 'aiNotificationAnimations') {
+          // Always include if it's explicitly set (even if false)
+          if (currentValue !== originalValue) {
+            updates[typedKey as keyof UpdateUserPreferencesDto] = currentValue as any
+          }
+        } else if (currentValue !== originalValue) {
+          updates[typedKey as keyof UpdateUserPreferencesDto] = currentValue as any
         }
       })
 
       const updated = await userPreferencesApi.updatePreferences(updates)
+      console.log('[UserPreferencesModal] Updated preferences received:', updated)
+      console.log('[UserPreferencesModal] aiNotificationAnimations value:', updated.aiNotificationAnimations)
       setPreferences(updated)
       setOriginalPreferences(updated)
       
@@ -445,6 +459,26 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
                                 <span className="text-sm text-neutral-700">24-hour</span>
                               </label>
                             </div>
+                          </div>
+                          
+                          {/* AI Notification Animations */}
+                          <div className="mt-6 pt-6 border-t border-neutral-200">
+                            <label className="flex items-start cursor-pointer group">
+                              <input
+                                type="checkbox"
+                                checked={preferences.aiNotificationAnimations !== false}
+                                onChange={(e) => handleChange('aiNotificationAnimations', e.target.checked)}
+                                className="mt-0.5 mr-3 text-green-600 focus:ring-green-500 rounded"
+                              />
+                              <div className="flex-1">
+                                <div className="text-sm font-medium text-neutral-900 mb-1">
+                                  AI Notification Animations
+                                </div>
+                                <div className="text-xs text-neutral-500">
+                                  Enable attention-grabbing pulse animations on the AI Assistant icon when there are unread AI insights or notifications. When disabled, the icon will remain static.
+                                </div>
+                              </div>
+                            </label>
                           </div>
                         </div>
                       )}
@@ -738,12 +772,64 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
-                      {isExpanded && (
-                        <div className="p-4 space-y-4 bg-white">
-                          <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">
-                              Default Page Size
-                            </label>
+                      {isExpanded && (() => {
+                        // Check welcome dashboard preference from localStorage
+                        const showWelcomeDashboard = typeof window !== 'undefined' 
+                          ? localStorage.getItem('another_ra_dont_show_welcome') !== 'true'
+                          : true
+
+                        return (
+                          <div className="p-4 space-y-4 bg-white">
+                            {/* Show Welcome Dashboard Toggle */}
+                            <div className="pb-4 border-b border-neutral-200">
+                              <label className="flex items-center justify-between cursor-pointer group">
+                                <div className="flex-1">
+                                  <span className="block text-sm font-medium text-neutral-700">
+                                    Show Welcome Dashboard
+                                  </span>
+                                  <p className="text-xs text-neutral-500 mt-1">
+                                    Display the welcome dashboard with KPIs and AI assistant when you log in
+                                  </p>
+                                </div>
+                                <div className="ml-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newValue = !showWelcomeDashboard
+                                      if (typeof window !== 'undefined') {
+                                        if (newValue) {
+                                          localStorage.removeItem('another_ra_dont_show_welcome')
+                                        } else {
+                                          localStorage.setItem('another_ra_dont_show_welcome', 'true')
+                                        }
+                                        // Trigger a custom event to notify the home page
+                                        window.dispatchEvent(new CustomEvent('welcome-dashboard-preference-changed', {
+                                          detail: { show: newValue }
+                                        }))
+                                      }
+                                      // Force re-render by updating preferences
+                                      setPreferences({ ...preferences! })
+                                    }}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                                      showWelcomeDashboard ? 'bg-green-600' : 'bg-neutral-200'
+                                    }`}
+                                    role="switch"
+                                    aria-checked={showWelcomeDashboard}
+                                  >
+                                    <span
+                                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        showWelcomeDashboard ? 'translate-x-5' : 'translate-x-0'
+                                      }`}
+                                    />
+                                  </button>
+                                </div>
+                              </label>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                                Default Page Size
+                              </label>
                             <select
                               value={preferences.defaultPageSize}
                               onChange={(e) => handleChange('defaultPageSize', parseInt(e.target.value))}
@@ -828,7 +914,8 @@ export default function UserPreferencesModal({ isOpen, onClose }: UserPreference
                             </div>
                           </div>
                         </div>
-                      )}
+                        )
+                      })()}
                     </div>
                   )
                 })()}

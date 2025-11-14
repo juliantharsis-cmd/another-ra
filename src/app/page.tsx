@@ -36,7 +36,7 @@ const getSpacePath = (app: ApplicationList): string => {
     return '/spaces/system-config/companies'
   }
   if (nameLower.includes('admin') || nameLower.includes('administration')) {
-    return '/spaces/admin/application-list'
+    return '/spaces/admin'
   }
   if (nameLower.includes('emission') || nameLower.includes('ghg')) {
     return '/spaces/emission-management/emission-factors'
@@ -220,7 +220,7 @@ export default function Home() {
           id: '2',
           name: 'Administration Space',
           description: 'Administrative functions and user management',
-          path: '/spaces/admin/application-list',
+          path: '/spaces/admin',
         },
         {
           id: '3',
@@ -240,16 +240,33 @@ export default function Home() {
     const dontShowWelcome = localStorage.getItem('another_ra_dont_show_welcome') === 'true'
     const isWelcomeDashboardEnabled = isFeatureEnabled('welcomeDashboard')
     
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Welcome Dashboard Check:', {
+        loggedIn,
+        dontShowWelcome,
+        isWelcomeDashboardEnabled,
+        shouldShow: isWelcomeDashboardEnabled && !dontShowWelcome
+      })
+    }
+    
     if (loggedIn) {
       setIsLoggedIn(true)
       setShowLoginForm(false)
       loadSpaceCards()
       
       // Show welcome dashboard only if feature is enabled and user hasn't disabled it
+      // Default to showing welcome dashboard if feature is enabled
       if (isWelcomeDashboardEnabled && !dontShowWelcome) {
-        setShowWelcomeDashboard(true)
+        // Small delay to ensure smooth transition
+        setTimeout(() => {
+          setShowWelcomeDashboard(true)
+        }, 100)
       } else {
-        setShowCards(true)
+        // If disabled, go directly to space cards
+        setTimeout(() => {
+          setShowCards(true)
+        }, 100)
       }
     }
   }, [loadSpaceCards])

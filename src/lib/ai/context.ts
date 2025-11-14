@@ -43,7 +43,7 @@ export function detectSpace(pathname: string): PageContext['space'] {
  * Extract table name from pathname
  * Examples:
  * - /spaces/system-config/companies -> companies
- * - /spaces/admin/application-list -> application-list
+ * - /spaces/system-config/application-list -> application-list
  */
 export function extractTableName(pathname: string): string | undefined {
   const match = pathname.match(/\/spaces\/[^/]+\/([^/]+)/)

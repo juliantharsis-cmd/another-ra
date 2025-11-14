@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { AIAssistantIcon, OverviewIcon, TrendIcon, RecommendationsIcon } from './icons'
+import { AIAssistantIcon, OverviewIcon, TrendIcon, RecommendationsIcon, ChatIcon } from './icons'
 import { isFeatureEnabled } from '@/lib/featureFlags'
 import { getAllIntegrations } from '@/lib/integrations/storage'
 import { AIIntegration } from '@/lib/integrations/types'
 import { aiClient } from '@/lib/ai/client'
+import ChatbotModal from './ChatbotModal'
 
 interface BlurOverlayProps {
   currentKpiIndex: number
@@ -329,7 +330,9 @@ export default function WelcomeDashboard({
   const [isLoadingAI, setIsLoadingAI] = useState(false)
   const [isTemplateText, setIsTemplateText] = useState(false)
   const [isUsingCustomProfile, setIsUsingCustomProfile] = useState(false)
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false)
   const assistantButtonRef = useRef<HTMLButtonElement>(null)
+  const chatButtonRef = useRef<HTMLButtonElement>(null)
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const textContainerRef = useRef<HTMLDivElement>(null)
 
@@ -758,7 +761,7 @@ Please provide 2-3 concise, professional sentences. Be specific and actionable. 
       {/* AI Assistant Button - Floating in top right with padding to prevent clipping */}
       {isAIAssistantEnabled && (
       <div className="fixed top-6 right-6 z-50" style={{ padding: '80px' }}>
-        <div className="relative">
+        <div className="relative flex items-center justify-center">
           {/* Main AI Assistant Button */}
           <button
             ref={assistantButtonRef}
@@ -774,9 +777,9 @@ Please provide 2-3 concise, professional sentences. Be specific and actionable. 
             <span className="absolute inset-0 rounded-full bg-teal-400 opacity-0 group-hover:opacity-20 animate-ping"></span>
           </button>
 
-          {/* Sub-menu icon buttons - simple elegant positioning around main icon */}
+          {/* Sub-menu icon buttons - arranged in cross pattern around main icon */}
           {showSubMenu && (
-            <div className="ai-sub-menu absolute inset-0">
+            <div className="ai-sub-menu absolute" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
               {/* Overview - Top */}
               <button
                 onClick={(e) => {
@@ -785,16 +788,16 @@ Please provide 2-3 concise, professional sentences. Be specific and actionable. 
                 }}
                 className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group animate-fade-in-submenu"
                 style={{
-                  top: `calc(50% - ${SUB_MENU_ICON_DISTANCE}px)`,
+                  top: `-${SUB_MENU_ICON_DISTANCE}px`,
                   left: '50%',
                   transform: 'translate(-50%, -50%)',
-                  animationDelay: '0.1s',
+                  animationDelay: '0s',
                   opacity: 0,
                 }}
                 title="Overview Analysis"
                 aria-label="Overview Analysis"
               >
-                <OverviewIcon className="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
+                <OverviewIcon className="w-5 h-5 text-teal-600 group-hover:scale-110 transition-transform flex-shrink-0" />
               </button>
 
               {/* Trends - Bottom */}
@@ -805,16 +808,16 @@ Please provide 2-3 concise, professional sentences. Be specific and actionable. 
                 }}
                 className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group animate-fade-in-submenu"
                 style={{
-                  top: `calc(50% + ${SUB_MENU_ICON_DISTANCE}px)`,
+                  top: `${SUB_MENU_ICON_DISTANCE}px`,
                   left: '50%',
                   transform: 'translate(-50%, -50%)',
-                  animationDelay: '0.2s',
+                  animationDelay: '0s',
                   opacity: 0,
                 }}
                 title="Trend Analysis"
                 aria-label="Trend Analysis"
               >
-                <TrendIcon className="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
+                <TrendIcon className="w-5 h-5 text-teal-600 group-hover:scale-110 transition-transform flex-shrink-0" />
               </button>
 
               {/* Recommendations - Left */}
@@ -826,20 +829,47 @@ Please provide 2-3 concise, professional sentences. Be specific and actionable. 
                 className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group animate-fade-in-submenu"
                 style={{
                   top: '50%',
-                  left: `calc(50% - ${SUB_MENU_ICON_DISTANCE}px)`,
+                  left: `-${SUB_MENU_ICON_DISTANCE}px`,
                   transform: 'translate(-50%, -50%)',
-                  animationDelay: '0.15s',
+                  animationDelay: '0s',
                   opacity: 0,
                 }}
                 title="Recommendations"
                 aria-label="Recommendations"
               >
-                <RecommendationsIcon className="w-5 h-5 group-hover:scale-110 transition-transform flex-shrink-0" />
+                <RecommendationsIcon className="w-5 h-5 text-teal-600 group-hover:scale-110 transition-transform flex-shrink-0" />
+              </button>
+
+              {/* Chat - Right */}
+              <button
+                ref={chatButtonRef}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsChatbotOpen(true)
+                  setShowSubMenu(false)
+                }}
+                className="absolute w-10 h-10 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-teal-200 hover:border-teal-400 hover:scale-110 flex items-center justify-center group animate-fade-in-submenu"
+                style={{
+                  top: '50%',
+                  left: `${SUB_MENU_ICON_DISTANCE}px`,
+                  transform: 'translate(-50%, -50%)',
+                  animationDelay: '0s',
+                  opacity: 0,
+                }}
+                title="Open Chat - Ask questions about your data"
+                aria-label="Open Chat"
+              >
+                <ChatIcon className="w-5 h-5 text-teal-600 group-hover:scale-110 transition-transform flex-shrink-0" />
               </button>
             </div>
           )}
         </div>
       </div>
+      )}
+
+      {/* Chatbot Modal */}
+      {isChatbotOpen && (
+        <ChatbotModal isOpen={isChatbotOpen} onClose={() => setIsChatbotOpen(false)} />
       )}
 
       {/* Analysis Overlay */}

@@ -11,7 +11,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { usePathname } from 'next/navigation'
 import { aiClient, ChatMessage } from '@/lib/ai/client'
 import { AIIntegration } from '@/lib/integrations/types'
-import { getAllIntegrations } from '@/lib/integrations/storage'
+import { getAllIntegrations, cleanupDuplicateIntegrations } from '@/lib/integrations/storage'
 import { gatherPageContext, formatContextAsSystemMessage } from '@/lib/ai/context'
 import Notification from './Notification'
 import { XMarkIcon } from './icons'
@@ -51,10 +51,23 @@ export default function AIChatInterface({ integration, onClose, className = '' }
 
   // Function to load and filter integrations
   const loadIntegrations = () => {
+    // First, clean up any duplicates in storage
+    cleanupDuplicateIntegrations()
+    
     const allIntegrations = getAllIntegrations().filter(i => i.enabled)
     
     // Remove duplicates by providerId - keep only the most recently updated one
-    const uniqueIntegrations = allIntegrations.reduce((acc, current) => {
+    // Also filter out invalid integrations (missing API key, invalid providerId)
+    const validIntegrations = allIntegrations.filter(i => {
+      // Must have API key
+      if (!i.apiKey || i.apiKey.trim() === '') return false
+      // Must have valid providerId
+      const validProviderIds = ['openai', 'anthropic', 'google', 'custom']
+      if (!validProviderIds.includes(i.providerId)) return false
+      return true
+    })
+    
+    const uniqueIntegrations = validIntegrations.reduce((acc, current) => {
       const existing = acc.find(i => i.providerId === current.providerId)
       if (!existing) {
         acc.push(current)
@@ -69,7 +82,18 @@ export default function AIChatInterface({ integration, onClose, className = '' }
         }
       }
       return acc
-    }, [] as typeof allIntegrations)
+    }, [] as typeof validIntegrations)
+    
+    // Sort by providerId for consistent ordering
+    uniqueIntegrations.sort((a, b) => {
+      const order = ['google', 'anthropic', 'openai', 'custom']
+      const aIndex = order.indexOf(a.providerId)
+      const bIndex = order.indexOf(b.providerId)
+      if (aIndex === -1 && bIndex === -1) return 0
+      if (aIndex === -1) return 1
+      if (bIndex === -1) return -1
+      return aIndex - bIndex
+    })
     
     setAvailableIntegrations(uniqueIntegrations)
     

@@ -30,7 +30,9 @@ import aiAgentProfileRoutes from './routes/aiAgentProfileRoutes'
 import userPreferenceRoutes from './routes/userPreferenceRoutes'
 import thermalCriteriaRoutes from './routes/thermalCriteriaRoutes'
 import geoCodeRoutes from './routes/geoCodeRoutes'
+import divisionsRoutes from './routes/divisionsRoutes'
 import developerRoutes from './routes/developerRoutes'
+import mcpRoutes from './routes/mcpRoutes'
 
 // Load environment variables FIRST, before any other imports
 // Use explicit path to ensure .env is loaded from server directory
@@ -198,7 +200,9 @@ app.use('/api/ai-agent-profile', aiAgentProfileRoutes)
 app.use('/api/user-preference', userPreferenceRoutes)
 app.use('/api/thermal-criteria', thermalCriteriaRoutes)
 app.use('/api/geo-code', geoCodeRoutes)
+app.use('/api/divisions', divisionsRoutes)
 app.use('/api/developer', developerRoutes)
+app.use('/api/mcp', mcpRoutes)
 
 // 404 handler
 app.use((req: Request, res: Response) => {

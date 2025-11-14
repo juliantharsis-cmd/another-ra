@@ -168,6 +168,11 @@ const USER_PREFERENCES_FIELDS = [
       ],
     },
   },
+  {
+    name: 'AI Notification Animations',
+    type: 'checkbox',
+    description: 'Enable attention-grabbing pulse animations on the AI Assistant icon when there are unread AI insights or notifications',
+  },
 ]
 
 async function updateUserPreferencesTableSchema() {
@@ -229,15 +234,38 @@ async function updateUserPreferencesTableSchema() {
       
       for (const field of fieldsToAdd) {
         try {
-          const fieldPayload: any = {
-            name: field.name,
-            type: field.type,
-            description: field.description,
-          }
-
-          // Add options if present
-          if (field.options) {
-            fieldPayload.options = field.options
+          // Build payload based on field type
+          let fieldPayload: any
+          
+          if (field.type === 'checkbox') {
+            // Checkbox fields: require options with icon and color
+            fieldPayload = {
+              name: field.name,
+              type: field.type,
+              options: field.options || {
+                icon: 'check',
+                color: 'greenBright',
+              },
+            }
+            
+            // Add description if provided
+            if (field.description) {
+              fieldPayload.description = field.description
+            }
+          } else {
+            // Other field types: include description and options if present
+            fieldPayload = {
+              name: field.name,
+              type: field.type,
+            }
+            
+            if (field.description) {
+              fieldPayload.description = field.description
+            }
+            
+            if (field.options) {
+              fieldPayload.options = field.options
+            }
           }
 
           const addResponse = await fetchFn(addFieldsUrl, {

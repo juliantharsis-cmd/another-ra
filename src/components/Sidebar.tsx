@@ -31,6 +31,7 @@ import { useDeveloperMode } from '@/contexts/DeveloperModeContext'
 import TableCreationDialog from './TableCreationDialog'
 import { useUserPreferences } from '@/hooks/useUserPreferences'
 import SpaceSwitcher from './SpaceSwitcher'
+import AIAssistantMenu from './AIAssistantMenu'
 
 interface NavItem {
   name: string
@@ -108,7 +109,7 @@ const getSystemConfigNavItems = (featureFlags: Record<string, boolean>): NavItem
     children: [
       { name: 'Integrations', Icon: SettingsIcon, path: '/spaces/system-config/integration-marketplace' },
       { name: 'AI Model Registry', Icon: SettingsIcon, path: '/spaces/system-config/ai-model-registry' },
-      ...(featureFlags.applicationList ? [{ name: 'Application List', Icon: SettingsIcon, path: '/spaces/admin/application-list' }] : []),
+      ...(featureFlags.applicationList ? [{ name: 'Application List', Icon: SettingsIcon, path: '/spaces/system-config/application-list' }] : []),
     ],
   }] : []),
 ]
@@ -150,11 +151,11 @@ const getSpaceTitle = (pathname: string): string => {
   
   switch (space) {
     case 'system-config':
-      return 'System configuration space'
+      return 'System Configuration'
     case 'admin':
-      return 'Administration space'
+      return 'Administration'
     default:
-      return 'System configuration space'
+      return 'System Configuration'
   }
 }
 
@@ -201,7 +202,9 @@ export default function Sidebar() {
   const [isUserPreferencesOpen, setIsUserPreferencesOpen] = useState(false)
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false)
   const [isChatbotOpen, setIsChatbotOpen] = useState(false)
-  const { unreadCount } = useNotifications()
+  const [isAIAssistantMenuOpen, setIsAIAssistantMenuOpen] = useState(false)
+  const aiAssistantButtonRef = useRef<HTMLButtonElement>(null)
+  const { unreadCount, notifications } = useNotifications()
   const [shouldAnimateIn, setShouldAnimateIn] = useState(false)
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
@@ -212,9 +215,30 @@ export default function Sidebar() {
   const [isTableCreationDialogOpen, setIsTableCreationDialogOpen] = useState(false)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [isSpaceSwitcherOpen, setIsSpaceSwitcherOpen] = useState(false)
-  const { preferences } = useUserPreferences()
+  const { preferences, loading: prefsLoading } = useUserPreferences()
   const sidebarLayout = preferences?.sidebarLayout || 'topBanner'
   const showButtonsInSidebar = sidebarLayout === 'sidebarFooter'
+  
+  // Get unread AI notifications (agent_insight type)
+  const unreadAINotifications = notifications.filter(
+    n => n.type === 'agent_insight' && !n.read
+  )
+  const hasAINotifications = unreadAINotifications.length > 0
+  
+  // Check if AI notification animations are enabled (default: true)
+  // Explicitly check for false - if undefined or true, enable animations
+  // IMPORTANT: Only enable animations after preferences have finished loading to prevent glitches
+  const aiNotificationAnimationsEnabled = !prefsLoading && preferences
+    ? (preferences.aiNotificationAnimations === false ? false : true)
+    : !prefsLoading // If preferences are loaded but null, default to true; if still loading, default to false to prevent glitch
+  
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Sidebar] AI Notification Animations enabled:', aiNotificationAnimationsEnabled, 'preference value:', preferences?.aiNotificationAnimations)
+  }
+  
+  // Use mounted state to prevent hydration mismatch, but don't delay rendering
+  // All icons will appear together once component is mounted
   
   // Get feature flags - use consistent defaults to avoid hydration mismatch
   // Load from localStorage only after mount
@@ -481,7 +505,7 @@ export default function Sidebar() {
       >
       {/* Header */}
       <div className={`p-4 border-b border-neutral-200 bg-neutral-50 ${isCollapsed ? 'px-2' : ''}`}>
-        <div className="flex items-center justify-between">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isCollapsed && (
             <div className="flex items-center space-x-3 group flex-1">
               <button
@@ -502,7 +526,7 @@ export default function Sidebar() {
           {isCollapsed && (
             <button
               onClick={() => setIsSpaceSwitcherOpen(true)}
-              className="flex items-center justify-center hover:opacity-80 transition-opacity"
+              className="flex items-center justify-center hover:opacity-80 transition-opacity w-full"
             >
               <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center text-white font-bold shadow-sm hover:bg-green-600 transition-colors cursor-pointer">
                 {spaceIconLetter}
@@ -531,48 +555,76 @@ export default function Sidebar() {
         {navItems.map((item) => renderNavItem(item))}
       </nav>
 
-      {/* Footer */}
+      {/* Footer - Only render after mount and preferences have finished loading to prevent glitches */}
+      {isMounted && !prefsLoading && (
       <div className={`p-4 border-t border-neutral-200 bg-neutral-50 flex ${isCollapsed ? 'flex-col items-center space-y-2' : 'items-center justify-between'}`}>
         {/* AI Assistant - First icon with engaging animation */}
         {isFeatureEnabled('chatbot') && (
           <button 
-            onClick={() => setIsChatbotOpen(true)}
-            className={`relative p-2.5 rounded-lg transition-all duration-300 group ${
-              isChatbotOpen 
-                ? 'bg-teal-100 shadow-md' 
+            ref={aiAssistantButtonRef}
+            onClick={() => setIsAIAssistantMenuOpen(!isAIAssistantMenuOpen)}
+            className={`relative p-2.5 rounded-lg transition-all duration-300 group z-[75] ${
+              isChatbotOpen || isAIAssistantMenuOpen
+                ? 'bg-teal-200 shadow-lg ring-2 ring-teal-400 ring-offset-2' 
                 : 'bg-gradient-to-br from-teal-50 to-teal-100/50 hover:from-teal-100 hover:to-teal-100 shadow-sm hover:shadow-md'
             }`}
             title="AI Assistant - Ask me anything"
+            style={{
+              // Ensure button stays above overlay blur
+              position: 'relative',
+            }}
           >
             {/* Subtle pulse animation on hover - similar to welcome page */}
             <span className="absolute inset-0 rounded-lg bg-teal-400 opacity-0 group-hover:opacity-30 animate-ping" style={{ animationDuration: '1.5s' }}></span>
             
-            {/* Glow effect when active */}
-            {isChatbotOpen && (
-              <span className="absolute inset-0 rounded-lg bg-teal-400 opacity-20 animate-pulse" style={{ animationDuration: '2s' }}></span>
+            {/* Enhanced glow effect when menu is open - makes it very clear */}
+            {(isChatbotOpen || isAIAssistantMenuOpen) && (
+              <>
+                <span className="absolute inset-0 rounded-lg bg-teal-400 opacity-30 animate-pulse" style={{ animationDuration: '2s' }}></span>
+                <span className="absolute -inset-1 rounded-lg bg-teal-300 opacity-20 blur-sm"></span>
+              </>
             )}
             
-            {/* Icon with gentle breathing animation when not active */}
-            <div className={`relative z-10 ${!isChatbotOpen ? 'animate-pulse' : ''}`} style={{ animationDuration: '2.5s' }}>
-              <AIAssistantIcon className={`w-6 h-6 transition-transform group-hover:scale-110 ${isChatbotOpen ? 'scale-110' : ''}`} />
-            </div>
-            
-            {/* Active indicator dot with glow */}
-            {isChatbotOpen && (
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-teal-500 rounded-full animate-pulse shadow-sm shadow-teal-500/50"></span>
+            {/* Icon - always pulses (resting heartbeat), faster when notifications present AND animations enabled */}
+            {!(isChatbotOpen || isAIAssistantMenuOpen) && (
+              <div 
+                className="relative z-10 animate-pulse"
+                style={{ 
+                  // Resting heartbeat: slow pulse (3.5s) when animations disabled or no notifications
+                  // Accelerated heartbeat: fast pulse (0.8s) when animations enabled AND notifications present
+                  animationDuration: hasAINotifications && aiNotificationAnimationsEnabled ? '0.8s' : '3.5s'
+                }}
+              >
+                <AIAssistantIcon className={`w-6 h-6 transition-transform group-hover:scale-110`} />
+              </div>
             )}
+            {isChatbotOpen || isAIAssistantMenuOpen ? (
+              <div className="relative z-10">
+                <AIAssistantIcon className={`w-6 h-6 transition-transform scale-110`} />
+              </div>
+            ) : null}
             
-            {/* Subtle "AI" badge when not active - makes it clear it's an agent */}
-            {!isChatbotOpen && !isCollapsed && (
-              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[9px] font-bold text-teal-700 bg-teal-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                AI
-              </span>
+            {/* AI Notification indicator - attention-grabbing pulse when notifications present (only when menu is closed AND animations enabled) */}
+            {hasAINotifications && aiNotificationAnimationsEnabled && !(isChatbotOpen || isAIAssistantMenuOpen) && (
+              <span className="absolute inset-0 rounded-lg bg-teal-400 opacity-40 animate-ping" style={{ animationDuration: '0.8s' }}></span>
             )}
           </button>
         )}
+
+        {/* AI Assistant Menu */}
+        {isFeatureEnabled('chatbot') && (
+          <AIAssistantMenu
+            isOpen={isAIAssistantMenuOpen}
+            onClose={() => setIsAIAssistantMenuOpen(false)}
+            buttonRef={aiAssistantButtonRef}
+            sidebarRef={sidebarRef}
+            isCollapsed={isCollapsed}
+            onChatClick={() => setIsChatbotOpen(true)}
+          />
+        )}
         
         {/* Conditionally render buttons based on sidebarLayout preference */}
-        {showButtonsInSidebar && (
+        {isMounted && showButtonsInSidebar && (
           <>
             {isFeatureEnabled('userPreferences') && (
               <button
@@ -652,6 +704,7 @@ export default function Sidebar() {
           </>
         )}
       </div>
+      )}
 
       {/* Settings Modal */}
       {isFeatureEnabled('settingsModal') && (
