@@ -682,7 +682,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <p className="text-[10px] text-neutral-600 leading-tight">Balanced configuration with common features enabled</p>
                   </button>
 
-                  {/* SARA on Steroids */}
+                  {/* On Steroids */}
                   <button
                     onClick={() => handlePresetSelect('power')}
                     className={`relative p-3 rounded-lg border-2 transition-all text-left ${
@@ -699,7 +699,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <span className="text-[10px] px-2 py-0.5 bg-green-600 text-white rounded-full font-medium">Active</span>
                       )}
                     </div>
-                    <h5 className="text-xs font-semibold text-neutral-900 mb-0.5">SARA on Steroids</h5>
+                    <h5 className="text-xs font-semibold text-neutral-900 mb-0.5">On Steroids</h5>
                     <p className="text-[10px] text-neutral-600 leading-tight">All features enabled for maximum functionality</p>
                   </button>
                 </div>
